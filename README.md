@@ -1,5 +1,7 @@
 ## How We Used Codex
 
+What this project is about
+
 Throughout the development of **FinPilot AI**, we used **OpenAI Codex** as our AI engineering partner. Instead of using it only for code generation, we collaborated with Codex across every stage of development while reviewing, testing, and refining all generated code before integrating it into the project.
 
 ### System Design
