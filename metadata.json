@@ -1,0 +1,6 @@
+{
+  "name": "FinPilot AI",
+  "description": "Enterprise-grade financial copilot and market analysis platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
