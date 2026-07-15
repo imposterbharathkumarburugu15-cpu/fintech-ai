@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Bell, ChevronDown } from "lucide-react";
+import { Search, Bell, ChevronDown, Command } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
 import { CopilotChat } from "./components/CopilotChat";
 import { AddTransactionModal } from "./components/AddTransactionModal";
@@ -11,14 +11,28 @@ import { GoalPlanner } from "./components/GoalPlanner";
 import { ReportCenter } from "./components/ReportCenter";
 import { MarketIntelligence } from "./components/MarketIntelligence";
 import { SmartAlerts } from "./components/SmartAlerts";
+
+const PAGE_TITLES = {
+  dashboard: "Dashboard",
+  expenses: "Expense Intelligence",
+  stocks: "Stock Research",
+  portfolio: "Portfolio Intelligence",
+  goals: "Goal Planner",
+  reports: "AI Report Center",
+  markets: "Market Intelligence",
+  alerts: "Smart Alerts",
+};
+
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [activeView, setActiveView] = useState("dashboard");
+  const [notifCount] = useState(3);
+
   const renderView = () => {
     switch (activeView) {
       case "dashboard":
-        return <Dashboard />;
+        return <Dashboard onViewChange={setActiveView} onToggleChat={() => setIsChatOpen(true)} />;
       case "expenses":
         return <ExpenseIntelligence />;
       case "stocks":
@@ -34,79 +48,79 @@ function App() {
       case "alerts":
         return <SmartAlerts />;
       default:
-        return <Dashboard />;
+        return <Dashboard onViewChange={setActiveView} onToggleChat={() => setIsChatOpen(true)} />;
     }
   };
-  return <div className="flex h-screen w-full bg-[#09090b] overflow-hidden text-[#fafafa] font-sans selection:bg-[#3b82f6]/30">
-      <Sidebar activeView={activeView} onViewChange={setActiveView} onToggleChat={() => setIsChatOpen(!isChatOpen)} />
-      
+
+  return (
+    <div className="flex h-screen w-full bg-[#09090b] overflow-hidden text-[#fafafa] font-sans">
+      <Sidebar
+        activeView={activeView}
+        onViewChange={setActiveView}
+        onToggleChat={() => setIsChatOpen(!isChatOpen)}
+      />
+
       <main className="flex-1 flex flex-col h-full overflow-hidden relative z-0">
-        {
-    /* Top Header */
-  }
-        <header className="h-[72px] flex items-center justify-between px-8 border-b border-[#27272a]">
-          <div className="relative w-96">
-            <Search className="w-[18px] h-[18px] text-[#71717a] absolute left-3 top-1/2 -translate-y-1/2" />
+        {/* Header */}
+        <header className="h-[64px] flex items-center justify-between px-8 border-b border-[#1e1e22] bg-[#09090b] shrink-0">
+          {/* Search */}
+          <div className="relative w-80">
+            <Search className="w-4 h-4 text-[#52525b] absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
-    type="text"
-    placeholder="Search anything"
-    className="w-full bg-[#18181b] border border-[#27272a] text-[14px] text-white rounded-xl pl-[38px] pr-12 py-2 focus:outline-none focus:ring-1 focus:ring-[#3b82f6] transition-all placeholder:text-[#71717a]"
-  />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
-              <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border border-[#3f3f46] bg-[#27272a] px-1.5 font-sans text-[11px] font-medium text-[#a1a1aa]">
-                <span className="text-[12px] leading-none mb-0.5">⌘</span>K
+              type="text"
+              placeholder="Search anything..."
+              className="w-full bg-[#18181b] border border-[#27272a] text-[13px] text-white rounded-xl pl-10 pr-14 py-2 focus:outline-none focus:border-[#3b82f6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all placeholder:text-[#52525b]"
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+              <kbd className="hidden sm:inline-flex h-5 items-center gap-0.5 rounded border border-[#3f3f46] bg-[#1e1e22] px-1.5 font-sans text-[10px] font-medium text-[#71717a]">
+                <Command className="w-2.5 h-2.5" />K
               </kbd>
             </div>
           </div>
-          
-          <div className="flex items-center gap-6">
-            <button className="text-[#a1a1aa] hover:text-white transition-colors relative">
-              <Bell className="w-[20px] h-[20px]" />
+
+          {/* Right */}
+          <div className="flex items-center gap-3">
+            {/* Notification Bell */}
+            <button className="relative w-9 h-9 rounded-xl bg-[#18181b] border border-[#27272a] flex items-center justify-center text-[#71717a] hover:text-white hover:border-[#3f3f46] transition-all">
+              <Bell className="w-4 h-4" />
+              {notifCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#ef4444] border border-[#09090b]" />
+              )}
             </button>
-            <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity pl-6 border-l border-[#27272a]">
-              <div className="w-8 h-8 rounded-full bg-[#27272a] flex items-center justify-center text-[11px] font-semibold text-white tracking-wide">
+
+            {/* Divider */}
+            <div className="h-6 w-px bg-[#27272a]" />
+
+            {/* User */}
+            <button className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl hover:bg-[#18181b] transition-colors group">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-[10px] font-bold text-white shadow-[0_0_12px_rgba(59,130,246,0.3)]">
                 MA
               </div>
-              <span className="text-[15px] font-medium text-white">Maya</span>
-              <ChevronDown className="w-4 h-4 text-[#71717a]" />
-            </div>
+              <div className="text-left hidden sm:block">
+                <p className="text-[13px] font-semibold text-white leading-tight">Maya</p>
+                <p className="text-[10px] text-[#52525b] leading-tight">Pro Plan</p>
+              </div>
+              <ChevronDown className="w-3.5 h-3.5 text-[#52525b] group-hover:text-[#a1a1aa] transition-colors" />
+            </button>
           </div>
         </header>
 
-        {
-    /* Dashboard Content */
-  }
-        <div className="flex-1 overflow-y-auto p-10 z-10 scrollbar-hide relative">
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-8 scrollbar-hide relative">
           {renderView()}
         </div>
-        
-        {
-    /* Copilot Chat Slide-over */
-  }
-        <CopilotChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-        
-        {
-    /* Modals */
-  }
-        <AddTransactionModal isOpen={isAddTransactionOpen} onClose={() => setIsAddTransactionOpen(false)} />
 
-        {
-    /* Global styling overrides */
-  }
-        <style dangerouslySetInnerHTML={{ __html: `
-          .scrollbar-hide::-webkit-scrollbar { display: none; }
-          .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-          .markdown-body p { margin-bottom: 0.75em; line-height: 1.5; }
-          .markdown-body p:last-child { margin-bottom: 0; }
-          .markdown-body strong { color: #fff; font-weight: 600; }
-          .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
-          .markdown-body li { margin-bottom: 0.25em; }
-          .markdown-body h1, .markdown-body h2, .markdown-body h3 { color: #fff; font-weight: 600; margin-top: 1.5em; margin-bottom: 0.5em; }
-          .markdown-body h3 { font-size: 1.1em; }
-        ` }} />
+        {/* Copilot Chat Slide-over */}
+        <CopilotChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+
+        {/* Modals */}
+        <AddTransactionModal
+          isOpen={isAddTransactionOpen}
+          onClose={() => setIsAddTransactionOpen(false)}
+        />
       </main>
-    </div>;
+    </div>
+  );
 }
-export {
-  App as default
-};
+
+export default App;
