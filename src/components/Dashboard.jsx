@@ -74,7 +74,7 @@ function Dashboard({ onViewChange, onToggleChat }) {
       <div className="flex justify-between items-end mb-8 animate-fade-in-up">
         <div>
           <h1 className="text-[34px] font-semibold text-white tracking-[-0.03em] mb-1 leading-none">
-            Good Morning, Bharath
+            Good Morning, Maya
           </h1>
           <p className="text-[#a1a1aa] text-[15px]">Here is your financial operating picture for today.</p>
         </div>
@@ -83,7 +83,7 @@ function Dashboard({ onViewChange, onToggleChat }) {
           className="group relative flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black text-[13px] font-bold transition-all shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] hover:scale-105 active:scale-95"
         >
           <Bot className="w-4 h-4" />
-          Ask Copilot
+          Ask NexusAI
           <div className="absolute inset-0 rounded-full ring-2 ring-white/20 scale-105 opacity-0 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" />
         </button>
       </div>
