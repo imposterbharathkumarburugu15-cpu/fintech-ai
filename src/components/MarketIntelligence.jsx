@@ -78,7 +78,7 @@ function MarketIntelligence() {
   const activeIndex = INDICES.find((i) => i.id === activeId);
 
   return (
-    <div className="flex flex-col h-full bg-[#09090b] -m-8">
+    <div className="flex flex-col h-full bg-[#09090b]">
       
       {/* Ticker Tape */}
       <TickerTape />
