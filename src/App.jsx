@@ -49,7 +49,7 @@ function App() {
         onToggleChat={() => setIsChatOpen(true)} 
       />
 
-      <main className="flex-1 overflow-hidden relative z-0">
+      <main className="flex-1 overflow-hidden relative">
         
         {/* Content */}
         <div className="h-full overflow-y-auto scrollbar-hide relative bg-[#040405]">

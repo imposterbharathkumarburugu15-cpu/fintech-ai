@@ -28,20 +28,18 @@ export function TopNav({ activeView, onViewChange, onToggleChat }) {
 
       {/* Center: Navigation Links */}
       <div className="flex items-center gap-1 hidden md:flex">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onViewChange?.(item.id)}
-            className="relative px-4 py-2 text-[14px] font-medium transition-colors"
-          >
-            <span className={activeView === item.id ? "text-white" : "text-[#a1a1aa] hover:text-[#e4e4e7]"}>
+        {navItems.map((item) => {
+          const isActive = activeView === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onViewChange?.(item.id)}
+              className={`px-4 pb-2 pt-3 text-[14px] font-medium transition-colors ${isActive ? "text-white border-b-2 border-[#8b5cf6]" : "text-[#a1a1aa] hover:text-[#e4e4e7]"}`}
+            >
               {item.label}
-            </span>
-            {activeView === item.id && (
-              <div className="absolute bottom-[-16px] left-0 right-0 h-[2px] bg-purple-500 rounded-t-full shadow-[0_-2px_10px_rgba(168,85,247,0.5)]" />
-            )}
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </div>
 
       {/* Right: Actions */}
