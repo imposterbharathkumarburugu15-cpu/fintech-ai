@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Search, Bell, ChevronDown, Command } from "lucide-react";
 import { Sidebar } from "./components/Sidebar";
-import { CopilotChat } from "./components/CopilotChat";
+import { CopilotChat } from "./components/NexusAI";
 import { AddTransactionModal } from "./components/AddTransactionModal";
 import { Dashboard } from "./components/Dashboard";
 import { ExpenseIntelligence } from "./components/ExpenseIntelligence";
