@@ -142,7 +142,7 @@ function NexusAI({ isOpen, onClose }) {
   const abortControllerRef = useRef(null);
 
   // Mocking profile name retrieval
-  const userProfileName = "Sarah";
+  const userProfileName = "Maya"; // Replace with actual user profile retrieval logic
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
