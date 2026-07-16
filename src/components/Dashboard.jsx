@@ -47,7 +47,7 @@ function StatCard({ title, value, change, isPositive, icon: Icon, iconColor }) {
   );
 }
 
-export function Dashboard({ onToggleChat }) {
+export function Dashboard({ onToggleChat, onViewChange }) {
   return (
     <div className="max-w-[1400px] mx-auto flex flex-col h-full pb-10 animate-fade-in-up">
       
@@ -97,10 +97,15 @@ export function Dashboard({ onToggleChat }) {
               </button>
             </div>
             <div className="flex flex-wrap gap-3">
-              {["Analyze my spending", "Best stocks to buy now", "Review my portfolio", "SIP recommendation"].map(chip => (
-                <button key={chip} className="flex items-center gap-2 bg-[#121214] border border-[#27272a] text-[#a1a1aa] text-[13px] px-4 py-2 rounded-xl hover:bg-[#18181b] hover:text-white transition-colors">
+              {[
+                { label: "Analyze my spending", action: () => onViewChange("expenses") },
+                { label: "Best stocks to buy now", action: () => onViewChange("stocks") },
+                { label: "Review my portfolio", action: () => onViewChange("portfolio") },
+                { label: "SIP recommendation", action: onToggleChat }
+              ].map(chip => (
+                <button key={chip.label} onClick={chip.action} className="flex items-center gap-2 bg-[#121214] border border-[#27272a] text-[#a1a1aa] text-[13px] px-4 py-2 rounded-xl hover:bg-[#18181b] hover:text-white transition-colors">
                   <Zap className="w-3.5 h-3.5" />
-                  {chip}
+                  {chip.label}
                 </button>
               ))}
             </div>
@@ -197,7 +202,7 @@ export function Dashboard({ onToggleChat }) {
                 <div className="flex items-center gap-2 text-[12px] text-[#a1a1aa]">
                   Risk Profile: <span className="px-2 py-0.5 rounded text-[#22c55e] bg-[#22c55e]/10 border border-[#22c55e]/20 font-bold">Moderate</span>
                 </div>
-                <button className="text-[#a855f7] hover:text-[#c084fc] text-[12px] font-bold flex items-center transition-colors">
+                <button onClick={() => onViewChange("portfolio")} className="text-[#a855f7] hover:text-[#c084fc] text-[12px] font-bold flex items-center transition-colors">
                   View Portfolio <ArrowRight className="w-3 h-3 ml-1" />
                 </button>
               </div>
@@ -267,7 +272,7 @@ export function Dashboard({ onToggleChat }) {
               </div>
             </div>
 
-            <button className="w-full mt-6 bg-[#18181b] border border-[#27272a] text-[#a1a1aa] text-[13px] font-bold py-3 rounded-xl hover:bg-[#27272a] hover:text-white transition-colors flex items-center justify-between px-4 relative z-10">
+            <button onClick={() => onViewChange("reports")} className="w-full mt-6 bg-[#18181b] border border-[#27272a] text-[#a1a1aa] text-[13px] font-bold py-3 rounded-xl hover:bg-[#27272a] hover:text-white transition-colors flex items-center justify-between px-4 relative z-10">
               View Full Brief <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -276,7 +281,7 @@ export function Dashboard({ onToggleChat }) {
           <div className="bg-[#0f0f11] border border-[#27272a] rounded-3xl p-6 h-[340px] flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-white font-semibold text-[15px]">Recent Activity</h3>
-              <button className="text-[#a855f7] text-[12px] font-bold hover:text-[#c084fc] flex items-center transition-colors">
+              <button onClick={() => onViewChange("expenses")} className="text-[#a855f7] text-[12px] font-bold hover:text-[#c084fc] flex items-center transition-colors">
                 View all <ArrowRight className="w-3 h-3 ml-1" />
               </button>
             </div>
@@ -312,7 +317,7 @@ export function Dashboard({ onToggleChat }) {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Alert 1 */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-[#121214] border border-[#27272a] hover:border-[#3f3f46] transition-colors group cursor-pointer">
+          <div onClick={() => onViewChange("alerts")} className="flex items-center justify-between p-4 rounded-2xl bg-[#121214] border border-[#27272a] hover:border-[#3f3f46] transition-colors group cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/20 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-[#22c55e]" />
@@ -326,7 +331,7 @@ export function Dashboard({ onToggleChat }) {
           </div>
 
           {/* Alert 2 */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-[#121214] border border-[#27272a] hover:border-[#3f3f46] transition-colors group cursor-pointer">
+          <div onClick={() => onViewChange("alerts")} className="flex items-center justify-between p-4 rounded-2xl bg-[#121214] border border-[#27272a] hover:border-[#3f3f46] transition-colors group cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-[#f59e0b]/10 border border-[#f59e0b]/20 flex items-center justify-center">
                 <CreditCard className="w-5 h-5 text-[#f59e0b]" />
@@ -340,7 +345,7 @@ export function Dashboard({ onToggleChat }) {
           </div>
 
           {/* Alert 3 */}
-          <div className="flex items-center justify-between p-4 rounded-2xl bg-[#121214] border border-[#27272a] hover:border-[#3f3f46] transition-colors group cursor-pointer">
+          <div onClick={() => onViewChange("alerts")} className="flex items-center justify-between p-4 rounded-2xl bg-[#121214] border border-[#27272a] hover:border-[#3f3f46] transition-colors group cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 flex items-center justify-center">
                 <PieChart className="w-5 h-5 text-[#8b5cf6]" />
