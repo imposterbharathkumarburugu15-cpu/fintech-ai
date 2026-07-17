@@ -2,7 +2,11 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+<<<<<<< HEAD
 import { Recommendation } from '..types/report.types';
+=======
+import { Recommendation } from '../../types/report.types';
+>>>>>>> 6ef9b16 (feat: Implement comprehensive AI Report Center with PDF export)
 
 interface RecommendationCardProps {
   recommendation: Recommendation;
