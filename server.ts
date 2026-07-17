@@ -11,10 +11,145 @@ const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 
-// Initialize OpenAI
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+type AlertSeverity = "urgent" | "warning" | "info" | "success";
+
+type MarketAlert = {
+  id: string;
+  category: "Portfolio" | "Market" | "Risk" | "Savings" | "Budget";
+  severity: AlertSeverity;
+  icon: "zap" | "chart" | "globe" | "target" | "dollar" | "shield" | "trendDown" | "trendUp";
+  title: string;
+  subtitle: string;
+  what: string;
+  why: string;
+  action: string;
+  actionColor: string;
+  time: string;
+  badgeLabel: string;
+  ticker?: string;
+  sourceName?: string;
+  sourceUrl?: string;
+  confidence?: number;
+  whyYouSeeThis?: string;
+};
+
+type Holding = { symbol: string; name: string; quantity: number; weight: number };
+
+const alertPalette: Record<AlertSeverity, string> = {
+  urgent: "#ef4444",
+  warning: "#f59e0b",
+  info: "#3b82f6",
+  success: "#22c55e",
+};
+
+function severityFromNews(headline: string, sentiment: number): AlertSeverity {
+  const text = headline.toLowerCase();
+  const highImpactTerms = /lawsuit|investigation|fraud|guidance cut|cuts guidance|misses estimates|recall|bankruptcy|sanction/;
+  const riskTerms = /downgrade|warning|decline|falls|drops|weak|risk|probe|slows/;
+  if (highImpactTerms.test(text) && sentiment < -0.15) return "urgent";
+  if (riskTerms.test(text) || sentiment < -0.25) return "warning";
+  return "info";
+}
+
+function parseHoldings(value: unknown): Holding[] {
+  if (typeof value !== "string") return [];
+  try {
+    const raw = JSON.parse(value);
+    if (!Array.isArray(raw)) return [];
+    const holdings = raw.slice(0, 20).flatMap((item) => {
+      const symbol = String(item?.symbol || "").trim().toUpperCase();
+      const name = String(item?.name || symbol).trim().slice(0, 80);
+      const quantity = Number(item?.quantity);
+      if (!/^[A-Z0-9._-]{1,20}$/.test(symbol) || !Number.isFinite(quantity) || quantity <= 0) return [];
+      return [{ symbol, name, quantity, weight: 0 }];
+    });
+    const totalQuantity = holdings.reduce((sum, holding) => sum + holding.quantity, 0);
+    return holdings.map((holding) => ({ ...holding, weight: Number(((holding.quantity / totalQuantity) * 100).toFixed(1)) }));
+  } catch {
+    return [];
+  }
+}
+
+function getHoldingsContext(symbol: string, holdings: Holding[]) {
+  return holdings.find((holding) => holding.symbol === symbol || holding.symbol.split(".")[0] === symbol);
+}
+
+function buildPortfolioAlerts(holdings: Holding[]): MarketAlert[] {
+  return holdings.slice(0, 5).map((holding) => ({
+    id: `portfolio-${holding.symbol}`, category: "Portfolio", severity: "info", icon: "target",
+    title: `${holding.name} is being monitored`, subtitle: `${holding.quantity} shares · ${holding.symbol}`,
+    what: "FinPilot will match market news and risk signals to this holding as new information becomes available.",
+    why: `You added ${holding.symbol} to your manual portfolio. It represents ${holding.weight}% of the tracked share count.`,
+    action: "Review holding", actionColor: alertPalette.info, time: "Updated now", badgeLabel: "Monitoring", ticker: holding.symbol,
+    sourceName: "Your manual portfolio", confidence: 1, whyYouSeeThis: `You own ${holding.quantity} ${holding.symbol} shares.`,
+  }));
+}
+
+async function getAlphaVantageAlerts(holdings: Holding[]): Promise<MarketAlert[]> {
+  const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
+  if (!apiKey) return [];
+
+  // Alpha Vantage's news endpoint rejects dot-form exchange symbols. Skip those
+  // symbols here so an unsupported exchange format cannot break the whole feed.
+  const tickers = holdings
+    .map((holding) => holding.symbol)
+    .filter((symbol) => /^[A-Za-z0-9_-]+$/.test(symbol))
+    .join(",");
+  if (!tickers) return [];
+  const params = new URLSearchParams({ function: "NEWS_SENTIMENT", tickers, limit: "20", apikey: apiKey });
+  const response = await fetch(`https://www.alphavantage.co/query?${params}`);
+  if (!response.ok) throw new Error(`News provider returned ${response.status}`);
+  const payload = await response.json() as { feed?: Array<Record<string, any>>; Note?: string; Information?: string; "Error Message"?: string };
+  if (payload.Note || payload.Information || payload["Error Message"]) {
+    throw new Error(payload.Note || payload.Information || "News provider request failed");
+  }
+
+  return (payload.feed || []).flatMap((article) => {
+    const relatedTicker = (article.ticker_sentiment || [])
+      .map((entry: Record<string, string>) => entry.ticker)
+      .find((ticker: string) => getHoldingsContext(ticker, holdings));
+    const holding = relatedTicker ? getHoldingsContext(relatedTicker, holdings) : undefined;
+    if (!holding) return [];
+
+    const tickerData = (article.ticker_sentiment || []).find((entry: Record<string, string>) => entry.ticker === relatedTicker);
+    const sentiment = Number(tickerData?.ticker_sentiment_score ?? article.overall_sentiment_score ?? 0);
+    const severity = severityFromNews(String(article.title || ""), sentiment);
+    const confidence = Math.min(0.95, Math.max(0.45, Math.abs(sentiment) + 0.55));
+    const category: MarketAlert["category"] = severity === "warning" || severity === "urgent" ? "Risk" : "Market";
+    const icon: MarketAlert["icon"] = severity === "urgent" ? "zap" : severity === "warning" ? "chart" : "globe";
+    return [{
+      id: `news-${article.url || article.time_published || article.title}`,
+      category, severity, icon,
+      title: article.title || `${holding.name} market update`,
+      subtitle: `${holding.symbol} · ${article.source || "Market news"}`,
+      what: article.summary || "A market news item matched one of your holdings.",
+      why: `This item was matched to ${holding.symbol} and assessed using article sentiment and your portfolio exposure.`,
+      action: "Read source", actionColor: alertPalette[severity], time: "Recent", badgeLabel: severity === "urgent" ? "Urgent risk" : severity === "warning" ? "Risk signal" : "Market news",
+      ticker: holding.symbol, sourceName: article.source || "Market news", sourceUrl: article.url,
+      confidence, whyYouSeeThis: `You own ${holding.quantity} ${holding.symbol} shares (${holding.weight}% of portfolio).`,
+    }];
+  }).slice(0, 12);
+}
+
+// ===============================
+// Personalized Market Alerts
+// ===============================
+app.get("/api/alerts", async (req, res) => {
+  const holdings = parseHoldings(req.query.holdings);
+  try {
+    const liveAlerts = await getAlphaVantageAlerts(holdings);
+    const alerts = [...liveAlerts, ...buildPortfolioAlerts(holdings)];
+    return res.json({ alerts, source: liveAlerts.length ? "live" : "manual", updatedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error("Market alert provider error:", error);
+    return res.json({ alerts: buildPortfolioAlerts(holdings), source: "manual", updatedAt: new Date().toISOString() });
+  }
 });
+
+// Initialize OpenAI
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 // ===============================
 // Finance-Specialized System Prompt
@@ -62,7 +197,7 @@ app.post("/api/chat", async (req, res) => {
       return res.status(400).json({ error: "Messages array is required." });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!openai) {
       return res.status(500).json({ error: "OPENAI_API_KEY is missing." });
     }
 
@@ -96,7 +231,7 @@ app.post("/api/chat/stream", async (req, res) => {
       return res.status(400).json({ error: "Messages array is required." });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!openai) {
       return res.status(500).json({ error: "OPENAI_API_KEY is missing." });
     }
 
