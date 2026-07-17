@@ -1,10 +1,14 @@
 // src/App.tsx
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { useState, useEffect } from "react";
 =======
 import React, { useState } from "react";
 >>>>>>> 6ef9b16 (feat: Implement comprehensive AI Report Center with PDF export)
+=======
+import { useState, useEffect } from "react";
+>>>>>>> fcaae31 (Re-established broken Login component)
 import { TopNav } from "./components/TopNav";
 import { CopilotChat } from "./components/NexusAI";
 import { AddTransactionModal } from "./components/AddTransactionModal";
@@ -17,10 +21,14 @@ import { ReportCenter } from "./components/ReportCenter";
 import { MarketIntelligence } from "./components/MarketIntelligence";
 import { SmartAlerts } from "./components/SmartAlerts";
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fcaae31 (Re-established broken Login component)
 import { Login } from "./components/Login";
 import { supabase } from "./supabaseClient";
 import ReportViewer from './components/reports/ReportViewer';
 import { Session, User } from '@supabase/supabase-js'; // 👈 ADD THIS IMPORT
+<<<<<<< HEAD
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -61,20 +69,55 @@ function App() {
 import ReportViewer from './components/reports/ReportViewer';
 
 type ViewType = "dashboard" | "expenses" | "stocks" | "portfolio" | "goals" | "reports" | "markets" | "alerts";
+=======
+>>>>>>> fcaae31 (Re-established broken Login component)
 
 function App() {
-  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
-  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState<boolean>(false);
-  const [activeView, setActiveView] = useState<ViewType>("dashboard");
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+  const [activeView, setActiveView] = useState("dashboard");
   const [selectedReportType, setSelectedReportType] = useState<string>("monthly");
+<<<<<<< HEAD
+=======
 
+  // AUTH STATE - with proper types
+  const [session, setSession] = useState<Session | null>(null); // 👈 ADD TYPE
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setChecking(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+>>>>>>> fcaae31 (Re-established broken Login component)
+
+  // Handle view change
+  const handleViewChange = (view: string) => {
+    setActiveView(view);
+  };
+
+  // Handle PDF export
   const handleExport = (format: 'pdf' | 'excel'): void => {
     console.log(`Exporting report as ${format}`);
+<<<<<<< HEAD
     alert(`📄 ${format.toUpperCase()} export coming soon!`);
   };
 
   const renderView = (): React.ReactNode => {
 >>>>>>> 6ef9b16 (feat: Implement comprehensive AI Report Center with PDF export)
+=======
+    alert(`${format.toUpperCase()} export coming soon!`);
+  };
+
+  const renderView = () => {
+>>>>>>> fcaae31 (Re-established broken Login component)
     switch (activeView) {
       case "dashboard":
         return <Dashboard onViewChange={setActiveView} onToggleChat={() => setIsChatOpen(true)} />;
@@ -150,10 +193,14 @@ function App() {
             
             <ReportViewer 
 <<<<<<< HEAD
+<<<<<<< HEAD
               userId={session?.user?.id || "demo-user"}
 =======
               userId="demo-user"
 >>>>>>> 6ef9b16 (feat: Implement comprehensive AI Report Center with PDF export)
+=======
+              userId={session?.user?.id || "demo-user"}
+>>>>>>> fcaae31 (Re-established broken Login component)
               reportType={selectedReportType}
               onExport={handleExport}
             />
@@ -169,6 +216,9 @@ function App() {
   };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> fcaae31 (Re-established broken Login component)
   // AUTH GATE
   if (checking) {
     return (
@@ -183,6 +233,7 @@ function App() {
   }
 
   // LOGGED IN - MAIN APP
+<<<<<<< HEAD
   return (
     <div className="flex flex-col h-screen w-full bg-[#040405] overflow-hidden text-[#fafafa] font-sans">
       <TopNav
@@ -192,19 +243,29 @@ function App() {
         user={session.user} // 👈 This is now properly typed as User
       />
 =======
+=======
+>>>>>>> fcaae31 (Re-established broken Login component)
   return (
     <div className="flex flex-col h-screen w-full bg-[#040405] overflow-hidden text-[#fafafa] font-sans">
-      <TopNav 
+      <TopNav
         activeView={activeView}
+<<<<<<< HEAD
         onViewChange={setActiveView}
         onToggleChat={() => setIsChatOpen(true)} 
       />
 
 >>>>>>> 6ef9b16 (feat: Implement comprehensive AI Report Center with PDF export)
+=======
+        onViewChange={handleViewChange}
+        onToggleChat={() => setIsChatOpen(true)}
+        user={session.user} // 👈 This is now properly typed as User
+      />
+>>>>>>> fcaae31 (Re-established broken Login component)
       <main className="flex-1 overflow-hidden relative">
         <div className="h-full overflow-y-auto scrollbar-hide relative bg-[#040405]">
           {renderView()}
         </div>
+<<<<<<< HEAD
 <<<<<<< HEAD
         <CopilotChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
 =======
@@ -212,6 +273,9 @@ function App() {
         <CopilotChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
 
 >>>>>>> 6ef9b16 (feat: Implement comprehensive AI Report Center with PDF export)
+=======
+        <CopilotChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+>>>>>>> fcaae31 (Re-established broken Login component)
         <AddTransactionModal
           isOpen={isAddTransactionOpen}
           onClose={() => setIsAddTransactionOpen(false)}
