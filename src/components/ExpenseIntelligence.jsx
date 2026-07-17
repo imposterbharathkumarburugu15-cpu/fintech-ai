@@ -1,12 +1,9 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState } from "react";
 import Papa from "papaparse";
-import { UploadCloud, CreditCard, DollarSign, Sparkles, X, TrendingDown, TrendingUp, AlertTriangle, Coffee, ShoppingBag, Laptop, Home, Plane, Plus } from "lucide-react";
-import { getTransactions, addTransactionsBulk, computeSummary, CATEGORY_COLORS } from "../lib/transactions";
-import { AddExpenseModal } from "./AddExpenseModal";
+import { UploadCloud, CreditCard, DollarSign, Sparkles, X, TrendingDown, TrendingUp, AlertTriangle, Coffee, ShoppingBag, Laptop, Home, Plane } from "lucide-react";
 
-// returns { cat, icon, color } — unchanged from his version
 const autoCategorize = (description) => {
-  const desc = (description || "").toLowerCase();
+  const desc = description.toLowerCase();
   if (desc.includes("apple") || desc.includes("best buy") || desc.includes("amazon") || desc.includes("microsoft")) return { cat: "Technology", icon: Laptop, color: "#3b82f6" };
   if (desc.includes("whole foods") || desc.includes("kroger") || desc.includes("walmart") || desc.includes("trader joe")) return { cat: "Groceries", icon: ShoppingBag, color: "#22c55e" };
   if (desc.includes("netflix") || desc.includes("spotify") || desc.includes("hulu") || desc.includes("amc") || desc.includes("disney")) return { cat: "Entertainment", icon: Sparkles, color: "#8b5cf6" };
@@ -17,61 +14,26 @@ const autoCategorize = (description) => {
   return { cat: "Other", icon: CreditCard, color: "#71717a" };
 };
 
-// pick a display icon from a stored category name
-const iconForCategory = (cat) => {
-  switch (cat) {
-    case "Technology": return Laptop;
-    case "Groceries": return ShoppingBag;
-    case "Entertainment": return Sparkles;
-    case "Transportation": return Plane;
-    case "Dining": return Coffee;
-    case "Housing": return Home;
-    case "Income": return DollarSign;
-    default: return CreditCard;
-  }
-};
-
-// DB row -> display shape his JSX expects (signed amount, icon, color)
-const toDisplay = (row) => {
-  const isIncome = row.type === "credit";
-  const cat = row.category || "Other";
-  return {
-    id: row.id,
-    name: row.merchant || "Unknown",
-    category: cat,
-    amount: isIncome ? Number(row.amount) : -Number(row.amount),
-    date: new Date(row.occurred_at).toLocaleString(),
-    icon: isIncome ? DollarSign : iconForCategory(cat),
-    type: isIncome ? "income" : "expense",
-    color: isIncome ? "#22c55e" : (CATEGORY_COLORS[cat] || "#71717a"),
-  };
-};
+const CATEGORY_STATS = [
+  { name: "Housing", amount: 2400, percent: 53, color: "#06b6d4" },
+  { name: "Dining", amount: 840, percent: 18, color: "#ef4444" },
+  { name: "Groceries", amount: 620, percent: 14, color: "#22c55e" },
+  { name: "Technology", amount: 350, percent: 8, color: "#3b82f6" },
+  { name: "Transportation", amount: 310, percent: 7, color: "#f59e0b" },
+];
 
 function ExpenseIntelligence() {
   const fileInputRef = useRef(null);
   const [isRecommendationsOpen, setIsRecommendationsOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [isAddOpen, setIsAddOpen] = useState(false);
-
-  const [transactions, setTransactions] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  async function refresh() {
-    setLoading(true); setError(null);
-    try {
-      const rows = await getTransactions();
-      setTransactions(rows.map(toDisplay));
-      setSummary(computeSummary(rows));
-    } catch (err) {
-      setError(err.message || "Failed to load transactions");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { refresh(); }, []);
+  
+  const [transactions, setTransactions] = useState([
+    { id: 1, name: "Apple Store", category: "Technology", amount: -1299, date: "Today, 2:45 PM", icon: Laptop, type: "expense", color: "#3b82f6" },
+    { id: 2, name: "Salary", category: "Income", amount: 5400, date: "Yesterday, 9:00 AM", icon: DollarSign, type: "income", color: "#22c55e" },
+    { id: 3, name: "Whole Foods", category: "Groceries", amount: -145.2, date: "Jun 16, 4:20 PM", icon: ShoppingBag, type: "expense", color: "#22c55e" },
+    { id: 4, name: "Netflix", category: "Entertainment", amount: -15.99, date: "Jun 15, 10:00 AM", icon: Sparkles, type: "expense", color: "#8b5cf6" },
+    { id: 5, name: "Uber", category: "Transportation", amount: -24.5, date: "Jun 14, 8:15 PM", icon: Plane, type: "expense", color: "#f59e0b" }
+  ]);
 
   const processFile = (file) => {
     if (!file) return;
@@ -79,61 +41,76 @@ function ExpenseIntelligence() {
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
-        complete: async (results) => {
-          const parsed = results.data
-            .filter((row) => Object.keys(row).length > 0 && Object.values(row).some((v) => v !== ""))
-            .map((row) => {
-              const keys = Object.keys(row);
-              let descKey = keys.find((k) => k.toLowerCase().match(/desc|name|merchant|payee|title|transaction|detail|particular|narration|info|memo|remark|company/i));
-              if (!descKey) {
-                const possibleKeys = keys.filter((k) => isNaN(parseFloat(row[k])) && !String(row[k]).match(/\d{2}[\/\-]\d{2}[\/\-]\d{2,4}/));
-                descKey = possibleKeys.length > 0 ? possibleKeys[0] : keys[1];
-              }
-              const description = descKey && row[descKey] ? String(row[descKey]).trim() : "Unknown Transaction";
+        complete: (results) => {
+          const newTransactions = results.data.filter(row => Object.keys(row).length > 0 && Object.values(row).some(v => v !== "")).map((row, index) => {
+            const keys = Object.keys(row);
+            
+            // Look for Description column (expanded for global and Indian banks)
+            let descKey = keys.find(k => k.toLowerCase().match(/desc|name|merchant|payee|title|transaction|detail|particular|narration|info|memo|remark|company/i));
+            
+            // If still no description key found, just pick the longest string value in the row that isn't a date or number
+            if (!descKey) {
+              const possibleKeys = keys.filter(k => isNaN(parseFloat(row[k])) && !row[k].match(/\d{2}[\/\-]\d{2}[\/\-]\d{2,4}/));
+              descKey = possibleKeys.length > 0 ? possibleKeys[0] : keys[1]; // fallback to second column
+            }
+            
+            const description = descKey && row[descKey] ? String(row[descKey]).trim() : "Unknown Transaction";
+            
+            // Look for Amount column
+            let amountKey = keys.find(k => k.toLowerCase().match(/amount|cost|price|debit|credit|value|total|withdrawal|deposit/i));
+            let rawAmount = amountKey ? row[amountKey] : null;
+            
+            if (!rawAmount) {
+              const possibleAmountKey = keys.find(k => String(row[k]).match(/^[\$£€\-\+]?\s*\d+(?:,\d{3})*(?:\.\d{2})?$/));
+              rawAmount = possibleAmountKey ? row[possibleAmountKey] : "0";
+            }
 
-              let amountKey = keys.find((k) => k.toLowerCase().match(/amount|cost|price|debit|credit|value|total|withdrawal|deposit/i));
-              let rawAmount = amountKey ? row[amountKey] : null;
-              if (!rawAmount) {
-                const possibleAmountKey = keys.find((k) => String(row[k]).match(/^[\$£€\-\+]?\s*\d+(?:,\d{3})*(?:\.\d{2})?$/));
-                rawAmount = possibleAmountKey ? row[possibleAmountKey] : "0";
-              }
-              let cleanedAmount = String(rawAmount).replace(/[,$£€]/g, "").trim();
-              if (cleanedAmount.endsWith("-") || (cleanedAmount.startsWith("(") && cleanedAmount.endsWith(")"))) {
-                cleanedAmount = "-" + cleanedAmount.replace(/[-()]/g, "");
-              }
-              let amount = parseFloat(cleanedAmount);
-              if (isNaN(amount)) amount = 0;
-
-              const catData = autoCategorize(description);
-              const type = amount >= 0 ? "credit" : "debit";
-              return { merchant: description, amount: Math.abs(amount), type, category: catData.cat, source: "upload" };
-            });
-          try {
-            await addTransactionsBulk(parsed);
-            await refresh();
-          } catch (err) {
-            setError(err.message || "Upload failed");
-          }
-        },
+            const dateKey = keys.find(k => k.toLowerCase().match(/date|time|when/i));
+            const date = dateKey ? row[dateKey] : new Date().toLocaleDateString();
+            
+            let cleanedAmount = String(rawAmount).replace(/[,$£€]/g, '').trim();
+            if (cleanedAmount.endsWith('-') || (cleanedAmount.startsWith('(') && cleanedAmount.endsWith(')'))) {
+              cleanedAmount = '-' + cleanedAmount.replace(/[-()]/g, '');
+            }
+            
+            let amount = parseFloat(cleanedAmount);
+            if (isNaN(amount)) amount = 0;
+            
+            const type = amount >= 0 ? "income" : "expense";
+            const catData = autoCategorize(description);
+            
+            return {
+              id: Date.now() + index,
+              name: description,
+              category: catData.cat,
+              amount,
+              date,
+              icon: type === "income" ? DollarSign : catData.icon,
+              type,
+              color: type === "income" ? "#22c55e" : catData.color
+            };
+          });
+          setTransactions((prev) => [...newTransactions, ...prev]);
+        }
       });
     } else {
       alert("Please upload a valid CSV file.");
     }
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleFileUpload = (e) => processFile(e.target.files?.[0]);
+  
   const onDragOver = (e) => { e.preventDefault(); setIsDragging(true); };
   const onDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
   const onDrop = (e) => {
-    e.preventDefault(); setIsDragging(false);
+    e.preventDefault();
+    setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       processFile(e.dataTransfer.files[0]);
       e.dataTransfer.clearData();
     }
   };
-
-  const money = (n) => `₹${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
   return (
     <div className="max-w-[1080px] mx-auto flex flex-col h-full">
@@ -144,74 +121,68 @@ function ExpenseIntelligence() {
           <h1 className="text-[38px] font-semibold text-white tracking-[-0.025em] mb-2 leading-none">Expense Intelligence</h1>
           <p className="text-[#71717a] text-[15px]">AI-powered transaction categorization and spending trends.</p>
         </div>
-        <button onClick={() => setIsAddOpen(true)}
-          className="flex items-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-colors">
-          <Plus className="w-4 h-4" /> Add Transaction
-        </button>
       </div>
 
-      {/* Top Stats Cards — REAL data */}
+      {/* Top Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 animate-fade-in-up stagger-1">
         <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-5">
           <p className="text-[#71717a] text-[13px] font-medium mb-1">Total Spent This Month</p>
-          <h3 className="text-[28px] font-semibold text-white tracking-tight">{summary ? money(summary.totalSpent) : "—"}</h3>
-          <div className="flex items-center text-[#71717a] text-[12px] font-medium mt-1">{summary ? `${summary.count} transactions` : ""}</div>
+          <h3 className="text-[28px] font-semibold text-white tracking-tight">$4,520</h3>
+          <div className="flex items-center text-[#ef4444] text-[12px] font-semibold mt-1">
+             <TrendingUp className="w-3.5 h-3.5 mr-1" /> +10.5% vs last month
+          </div>
         </div>
         <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-5">
           <p className="text-[#71717a] text-[13px] font-medium mb-1">Top Spending Category</p>
-          <h3 className="text-[28px] font-semibold text-white tracking-tight">{summary?.topCategory || "—"}</h3>
-          <div className="flex items-center text-[#a1a1aa] text-[12px] font-medium mt-1">{summary && summary.topCategory ? `${summary.topCategoryPct}% of total expenses` : ""}</div>
+          <h3 className="text-[28px] font-semibold text-white tracking-tight">Housing</h3>
+          <div className="flex items-center text-[#a1a1aa] text-[12px] font-medium mt-1">
+             53% of total expenses
+          </div>
         </div>
         <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-5">
           <p className="text-[#71717a] text-[13px] font-medium mb-1">Average Daily Spend</p>
-          <h3 className="text-[28px] font-semibold text-white tracking-tight">{summary ? money(summary.avgDaily) : "—"}</h3>
-          <div className="flex items-center text-[#71717a] text-[12px] font-medium mt-1">this month</div>
+          <h3 className="text-[28px] font-semibold text-white tracking-tight">$145.80</h3>
+          <div className="flex items-center text-[#22c55e] text-[12px] font-semibold mt-1">
+             <TrendingDown className="w-3.5 h-3.5 mr-1" /> -$12.40 vs last month
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-fade-in-up stagger-2">
-        {/* Left: transactions from DB */}
+        {/* Left Col: Transactions */}
         <div className="md:col-span-2 bg-[#18181b] border border-[#27272a] rounded-2xl overflow-hidden flex flex-col">
           <div className="px-6 py-4 border-b border-[#27272a] flex justify-between items-center bg-[#18181b] shrink-0">
             <h3 className="text-white font-semibold text-[15px]">Recent Transactions</h3>
             <span className="text-[12px] text-[#71717a]">{transactions.length} total</span>
           </div>
-
-          {loading ? (
-            <div className="p-10 text-center text-[#71717a]">Loading…</div>
-          ) : error ? (
-            <div className="p-10 text-center text-[#ef4444]">{error}</div>
-          ) : transactions.length === 0 ? (
-            <div className="p-10 text-center text-[#71717a]">No transactions yet. Add one or upload a CSV.</div>
-          ) : (
-            <div className="divide-y divide-[#27272a] overflow-y-auto max-h-[500px] scrollbar-thin">
-              {transactions.map((t) => (
-                <div key={t.id} className="p-5 flex items-center justify-between hover:bg-[#1a1a1d] transition-colors group">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105"
-                         style={{ background: `${t.color}15`, color: t.color }}>
-                      <t.icon className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="text-white font-medium text-[15px] mb-0.5">{t.name}</h4>
-                      <div className="flex items-center gap-2 text-[12px] text-[#71717a]">
-                        <span className="font-medium" style={{ color: t.color }}>{t.category}</span>
-                        <span>•</span>
-                        <span className="font-mono text-[11px]">{t.date}</span>
-                      </div>
-                    </div>
+          <div className="divide-y divide-[#27272a] overflow-y-auto max-h-[500px] scrollbar-thin">
+            {transactions.map((t) => (
+              <div key={t.id} className="p-5 flex items-center justify-between hover:bg-[#1a1a1d] transition-colors group">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105" 
+                       style={{ background: `${t.color}15`, color: t.color }}>
+                    <t.icon className="w-5 h-5" />
                   </div>
-                  <div className={`text-[15px] font-mono font-medium ${t.type === "income" ? "text-[#22c55e]" : "text-white"}`}>
-                    {t.type === "income" ? "+" : ""}{t.amount < 0 ? "-" : ""}₹{Math.abs(t.amount).toLocaleString(void 0, { minimumFractionDigits: 2 })}
+                  <div>
+                    <h4 className="text-white font-medium text-[15px] mb-0.5">{t.name}</h4>
+                    <div className="flex items-center gap-2 text-[12px] text-[#71717a]">
+                      <span className="font-medium" style={{ color: t.color }}>{t.category}</span>
+                      <span>•</span>
+                      <span className="font-mono text-[11px]">{t.date}</span>
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className={`text-[15px] font-mono font-medium ${t.type === "income" ? "text-[#22c55e]" : "text-white"}`}>
+                  {t.type === "income" ? "+" : ""}{t.amount < 0 ? "-" : ""}${Math.abs(t.amount).toLocaleString(void 0, { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-
-        {/* Right: insights + upload + breakdown */}
+        
+        {/* Right Col: Insights & Upload & Breakdown */}
         <div className="space-y-6">
+          {/* AI Insights Card */}
           <div className="bg-[#18181b] border border-[#3b82f6]/30 rounded-2xl p-6 relative overflow-hidden shadow-[0_0_30px_rgba(59,130,246,0.05)]">
             <div className="absolute top-0 right-0 w-32 h-32 bg-[#3b82f6]/10 rounded-full blur-2xl pointer-events-none" />
             <div className="flex items-center gap-2 mb-4">
@@ -219,60 +190,62 @@ function ExpenseIntelligence() {
               <h3 className="text-white font-semibold text-[15px]">AI Insights</h3>
             </div>
             <p className="text-[#a1a1aa] text-[13px] leading-relaxed mb-4">
-              {summary && summary.count > 0
-                ? <>You logged <span className="text-white font-semibold">{summary.count} transaction(s)</span> this month. Top category: <span className="text-white font-medium">{summary.topCategory || "—"}</span>.</>
-                : "Add transactions to unlock AI insights on your spending."}
+              We detected <span className="text-white font-semibold">3 active subscriptions</span> totaling $45/mo. Your dining expenses are <span className="text-[#ef4444] font-medium">12% higher</span> this month.
             </p>
-            <button onClick={() => setIsRecommendationsOpen(true)}
-              className="text-[#3b82f6] hover:text-[#60a5fa] text-[13px] font-semibold transition-colors flex items-center gap-1">
+            <button 
+              onClick={() => setIsRecommendationsOpen(true)} 
+              className="text-[#3b82f6] hover:text-[#60a5fa] text-[13px] font-semibold transition-colors flex items-center gap-1"
+            >
               Review Budget Recommendations <TrendingUp className="w-4 h-4 ml-1" />
             </button>
           </div>
 
-          <div onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
-            className={`bg-[#18181b] border-2 border-dashed ${isDragging ? 'border-[#3b82f6] bg-[#3b82f6]/5' : 'border-[#3f3f46]'} rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all`}>
+          {/* Upload Area */}
+          <div 
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
+            className={`bg-[#18181b] border-2 border-dashed ${isDragging ? 'border-[#3b82f6] bg-[#3b82f6]/5' : 'border-[#3f3f46]'} rounded-2xl p-6 flex flex-col items-center justify-center text-center transition-all`}
+          >
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-colors ${isDragging ? 'bg-[#3b82f6]/20' : 'bg-[#27272a]'}`}>
               <UploadCloud className={`w-6 h-6 ${isDragging ? 'text-[#3b82f6]' : 'text-[#a1a1aa]'}`} />
             </div>
             <h3 className="text-white font-semibold text-[15px] mb-1">Upload Statement</h3>
-            <p className="text-[#71717a] text-[12px] mb-4 max-w-[200px]">Drag & drop CSV formats supported</p>
+            <p className="text-[#71717a] text-[12px] mb-4 max-w-[200px]">Drag & drop CSV or PDF formats supported</p>
             <input type="file" ref={fileInputRef} className="hidden" accept=".csv" onChange={handleFileUpload} />
-            <button onClick={() => fileInputRef.current?.click()}
-              className="bg-[#27272a] hover:bg-[#3f3f46] text-white px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors w-full">
+            <button 
+              onClick={() => fileInputRef.current?.click()} 
+              className="bg-[#27272a] hover:bg-[#3f3f46] text-white px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-colors w-full"
+            >
               Browse Files
             </button>
           </div>
 
-          {/* Category Breakdown — REAL data */}
+          {/* Category Breakdown */}
           <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-6">
             <h3 className="text-white font-semibold text-[15px] mb-4">Category Breakdown</h3>
-            {summary && summary.breakdown.length > 0 ? (
-              <div className="space-y-4">
-                {summary.breakdown.map((stat) => (
-                  <div key={stat.name}>
-                    <div className="flex justify-between text-[12px] mb-1.5">
-                      <span className="text-[#e4e4e7] font-medium">{stat.name}</span>
-                      <span className="text-[#71717a] font-mono">₹{stat.amount.toLocaleString()}</span>
-                    </div>
-                    <div className="h-1.5 w-full bg-[#27272a] rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${stat.percent}%`, backgroundColor: stat.color }} />
-                    </div>
+            <div className="space-y-4">
+              {CATEGORY_STATS.map(stat => (
+                <div key={stat.name}>
+                  <div className="flex justify-between text-[12px] mb-1.5">
+                    <span className="text-[#e4e4e7] font-medium">{stat.name}</span>
+                    <span className="text-[#71717a] font-mono">${stat.amount.toLocaleString()}</span>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[#71717a] text-[13px]">No spending yet this month.</p>
-            )}
+                  <div className="h-1.5 w-full bg-[#27272a] rounded-full overflow-hidden">
+                    <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${stat.percent}%`, backgroundColor: stat.color }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      <AddExpenseModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} onSaved={refresh} />
-
-      {/* Recommendations modal (unchanged UI, placeholder copy) */}
+      {/* AI Recommendations Modal */}
       {isRecommendationsOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#09090b] border border-[#27272a] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col animate-fade-in-up">
+            
             <div className="p-6 border-b border-[#27272a] flex items-center justify-between bg-[#09090b]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#3b82f6]/20 to-[#8b5cf6]/20 border border-[#3b82f6]/20 flex items-center justify-center">
@@ -287,16 +260,54 @@ function ExpenseIntelligence() {
                 <X className="w-5 h-5" />
               </button>
             </div>
+            
             <div className="p-6 overflow-y-auto max-h-[60vh] space-y-4 custom-scrollbar">
-              <div className="flex gap-4 p-5 rounded-xl border border-[#27272a] bg-[#18181b]">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5 text-blue-500" />
+              
+              <div className="flex gap-4 p-5 rounded-xl border border-[#27272a] bg-[#18181b] hover:border-[#3f3f46] transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <TrendingDown className="w-5 h-5 text-emerald-500" />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold mb-1 text-[15px]">Coming soon</h3>
-                  <p className="text-[#a1a1aa] text-[13px] leading-relaxed">These recommendations become AI-generated from your real data once Nexus AI is wired in.</p>
+                  <h3 className="text-white font-semibold mb-1 text-[15px]">Optimize Subscriptions</h3>
+                  <p className="text-[#a1a1aa] text-[13px] leading-relaxed mb-3">
+                    You are paying for both Netflix and Hulu but rarely use Hulu. Canceling Hulu could save you <span className="text-white font-semibold">$14.99/mo</span> ($179.88/year).
+                  </p>
+                  <button className="bg-[#27272a] hover:bg-[#3f3f46] text-white px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors">
+                    Review Subscriptions
+                  </button>
                 </div>
               </div>
+              
+              <div className="flex gap-4 p-5 rounded-xl border border-[#27272a] bg-[#18181b] hover:border-[#3f3f46] transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold mb-1 text-[15px]">Dining Out Alert</h3>
+                  <p className="text-[#a1a1aa] text-[13px] leading-relaxed mb-3">
+                    Dining expenses are trending <span className="text-amber-500 font-medium">12% higher</span> than your historical average. Consider a weekly meal prep plan to reduce weekday lunches.
+                  </p>
+                  <button className="bg-[#27272a] hover:bg-[#3f3f46] text-white px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors">
+                    Set Dining Budget
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex gap-4 p-5 rounded-xl border border-[#27272a] bg-[#18181b] hover:border-[#3f3f46] transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                  <TrendingUp className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <h3 className="text-white font-semibold mb-1 text-[15px]">Savings Opportunity</h3>
+                  <p className="text-[#a1a1aa] text-[13px] leading-relaxed mb-3">
+                    Your income exceeded expenses by a larger margin this month. Redirecting an extra <span className="text-white font-semibold">$300</span> to your Emergency Fund will reach your goal 2 months faster.
+                  </p>
+                  <button className="bg-[#3b82f6] hover:bg-[#2563eb] text-white px-4 py-2 rounded-lg text-[12px] font-semibold transition-colors shadow-[0_2px_8px_rgba(59,130,246,0.3)]">
+                    Transfer to Savings
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
