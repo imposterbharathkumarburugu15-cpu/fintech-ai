@@ -11,23 +11,16 @@
     "lint": "tsc --noEmit"
   },
   "dependencies": {
-<<<<<<< HEAD
-    "@google/genai": "^2.12.0",
-=======
     "@supabase/supabase-js": "^2.110.7",
->>>>>>> 6f42608 (Added Login feature , added proper backend for every entry made , it will get stored)
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "framer-motion": "^12.42.2",
-<<<<<<< HEAD
-=======
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",
     "jspdf": "^4.2.1",
->>>>>>> 6ef9b16 (feat: Implement comprehensive AI Report Center with PDF export)
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "papaparse": "^5.5.4",
