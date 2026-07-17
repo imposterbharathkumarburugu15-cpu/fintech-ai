@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { TopNav } from "./components/TopNav";
 import { CopilotChat } from "./components/NexusAI";
 import { AddTransactionModal } from "./components/AddTransactionModal";
@@ -12,42 +12,46 @@ import { GoalPlanner } from "./components/GoalPlanner";
 import { ReportCenter } from "./components/ReportCenter";
 import { MarketIntelligence } from "./components/MarketIntelligence";
 import { SmartAlerts } from "./components/SmartAlerts";
-import ReportViewer from './components/reports/ReportViewer';
+import { Login } from "./components/Login";
 import { supabase } from "./supabaseClient";
-
-type ViewType = "dashboard" | "expenses" | "stocks" | "portfolio" | "goals" | "reports" | "markets" | "alerts";
+import ReportViewer from './components/reports/ReportViewer';
+import { Session, User } from '@supabase/supabase-js'; // 👈 ADD THIS IMPORT
 
 function App() {
-  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
-  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState<boolean>(false);
-  const [activeView, setActiveView] = useState<ViewType>("dashboard");
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+  const [activeView, setActiveView] = useState("dashboard");
   const [selectedReportType, setSelectedReportType] = useState<string>("monthly");
-  const [user, setUser] = useState<any>(null);
 
-  // Get user from Supabase
+  // AUTH STATE - with proper types
+  const [session, setSession] = useState<Session | null>(null); // 👈 ADD TYPE
+  const [checking, setChecking] = useState(true);
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setChecking(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user || null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
     });
 
-    return () => listener?.subscription.unsubscribe();
+    return () => subscription.unsubscribe();
   }, []);
 
+  // Handle view change
+  const handleViewChange = (view: string) => {
+    setActiveView(view);
+  };
+
+  // Handle PDF export
   const handleExport = (format: 'pdf' | 'excel'): void => {
     console.log(`Exporting report as ${format}`);
     alert(`${format.toUpperCase()} export coming soon!`);
   };
 
-  // Wrapper function to handle view changes with proper typing
-  const handleViewChange = (view: string) => {
-    setActiveView(view as ViewType);
-  };
-
-  const renderView = (): React.ReactNode => {
+  const renderView = () => {
     switch (activeView) {
       case "dashboard":
         return <Dashboard onViewChange={setActiveView} onToggleChat={() => setIsChatOpen(true)} />;
@@ -106,7 +110,7 @@ function App() {
             </div>
             
             <ReportViewer 
-              userId="demo-user"
+              userId={session?.user?.id || "demo-user"}
               reportType={selectedReportType}
               onExport={handleExport}
             />
@@ -121,22 +125,33 @@ function App() {
     }
   };
 
+  // AUTH GATE
+  if (checking) {
+    return (
+      <div className="min-h-screen w-full bg-[#040405] flex items-center justify-center text-[#71717a]">
+        Loading…
+      </div>
+    );
+  }
+  
+  if (!session) {
+    return <Login />;
+  }
+
+  // LOGGED IN - MAIN APP
   return (
     <div className="flex flex-col h-screen w-full bg-[#040405] overflow-hidden text-[#fafafa] font-sans">
-      <TopNav 
+      <TopNav
         activeView={activeView}
         onViewChange={handleViewChange}
         onToggleChat={() => setIsChatOpen(true)}
-        user={user}
+        user={session.user} // 👈 This is now properly typed as User
       />
-
       <main className="flex-1 overflow-hidden relative">
         <div className="h-full overflow-y-auto scrollbar-hide relative bg-[#040405]">
           {renderView()}
         </div>
-
         <CopilotChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-
         <AddTransactionModal
           isOpen={isAddTransactionOpen}
           onClose={() => setIsAddTransactionOpen(false)}
