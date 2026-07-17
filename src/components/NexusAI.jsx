@@ -1,162 +1,108 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, X, RotateCcw, Copy, Check, BarChart2, Briefcase, TrendingUp, Shield, Activity, PieChart, FileText } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import { 
+  X, Send, Sparkles, User, Copy, Check, RefreshCw, 
+  BarChart2, TrendingUp, Lightbulb, Wallet, ArrowRight,
+  MessageSquare, Settings, Sliders
+} from "lucide-react";
 import Markdown from "react-markdown";
-import { cn } from "../lib/utils";
 
-const SUGGESTED_PROMPTS = [
-  { label: "Analyze my monthly expenses", icon: <BarChart2 className="w-4 h-4" /> },
-  { label: "Build a monthly budget", icon: <PieChart className="w-4 h-4" /> },
-  { label: "Research NVIDIA", icon: <TrendingUp className="w-4 h-4" /> },
-  { label: "Compare Apple vs Microsoft", icon: <Activity className="w-4 h-4" /> },
-  { label: "Review my portfolio", icon: <Briefcase className="w-4 h-4" /> },
-  { label: "Generate my financial report", icon: <FileText className="w-4 h-4" /> },
-  { label: "Explain mutual funds", icon: <Bot className="w-4 h-4" /> },
-  { label: "Create an emergency fund plan", icon: <Shield className="w-4 h-4" /> },
+const suggestions = [
+  { icon: BarChart2, label: "Analyze my spending trends" },
+  { icon: TrendingUp, label: "Explain NVIDIA's growth" },
+  { icon: Wallet, label: "Review portfolio performance" },
+  { icon: Lightbulb, label: "Build a budget for next month" }
 ];
 
-const THINKING_MESSAGES = [
-  "Analyzing your financial information...",
-  "Reviewing spending patterns...",
-  "Researching market information...",
-  "Evaluating investment opportunities...",
-  "Preparing personalized recommendations...",
-  "Calculating financial insights...",
-  "Understanding your portfolio...",
-];
+function Message({ msg, isStreaming }) {
+  const isUser = msg.role === "user";
+  const [copied, setCopied] = useState(false);
 
-function PremiumTypingIndicator() {
-  const [msgIndex, setMsgIndex] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMsgIndex((prev) => (prev + 1) % THINKING_MESSAGES.length);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, []);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(msg.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div className="flex gap-4 max-w-[85%] animate-fade-in-up">
-      <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#18181b] to-[#09090b] border border-[#27272a] flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(255,255,255,0.05)] mt-1">
-        <Bot className="w-5 h-5 text-white" />
-      </div>
-      <div className="px-5 py-4 rounded-3xl rounded-tl-sm bg-[#18181b]/80 backdrop-blur-md border border-[#27272a] flex items-center gap-3 min-h-[52px]">
-        <div className="flex items-center gap-1.5">
-          <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut" }} className="w-1.5 h-1.5 rounded-full bg-white/70" />
-          <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut", delay: 0.2 }} className="w-1.5 h-1.5 rounded-full bg-white/70" />
-          <motion.span animate={{ opacity: [0.3, 1, 0.3] }} transition={{ repeat: Infinity, duration: 1.4, ease: "easeInOut", delay: 0.4 }} className="w-1.5 h-1.5 rounded-full bg-white/70" />
+    <div className={`flex w-full px-6 py-6 ${isUser ? "" : "bg-[#121214] border-y border-white/5"}`}>
+      <div className="flex gap-4 max-w-3xl mx-auto w-full">
+        {isUser ? (
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 border border-white/10 shadow-lg">
+            <User className="w-4 h-4 text-white" />
+          </div>
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center shrink-0 border border-white/10 shadow-lg relative overflow-hidden">
+            <Sparkles className="w-4 h-4 text-white z-10" />
+            <div className="absolute inset-0 bg-white/20 animate-pulse mix-blend-overlay"></div>
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0 mt-1">
+          {isUser ? (
+            <p className="text-[#fafafa] font-medium leading-relaxed">{msg.content}</p>
+          ) : (
+            <div className="text-[15px] text-[#e4e4e7] leading-relaxed [&>p]:mb-4 [&>ul]:mb-4 [&>ul]:list-disc [&>ul]:pl-6 [&>ol]:mb-4 [&>ol]:list-decimal [&>ol]:pl-6 [&>pre]:bg-[#0A0A0A] [&>pre]:border [&>pre]:border-white/10 [&>pre]:rounded-xl [&>pre]:p-4 [&>pre]:overflow-x-auto [&>h1]:text-white [&>h1]:font-semibold [&>h1]:mb-2 [&>h1]:mt-6 [&>h2]:text-white [&>h2]:font-semibold [&>h2]:mb-2 [&>h2]:mt-6 [&>h3]:text-white [&>h3]:font-semibold [&>h3]:mb-2 [&>h3]:mt-6 [&>code]:text-indigo-300 [&>code]:bg-indigo-500/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>strong]:text-white [&>table]:w-full [&>table]:border-collapse [&>table]:my-4 [&>table_th]:border-b [&>table_th]:border-white/10 [&>table_th]:pb-2 [&>table_th]:text-left [&>table_th]:text-white [&>table_td]:border-b [&>table_td]:border-white/5 [&>table_td]:py-2 [&>table_td]:text-[#e4e4e7]">
+              <Markdown>{msg.content}</Markdown>
+              {isStreaming && (
+                <span className="inline-block w-2 h-4 bg-purple-400 ml-1 animate-pulse align-middle" />
+              )}
+            </div>
+          )}
+
+          {!isUser && !isStreaming && (
+            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
+              <button 
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-[#a1a1aa] hover:text-white hover:bg-white/5 transition-colors"
+              >
+                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? "Copied" : "Copy"}
+              </button>
+            </div>
+          )}
         </div>
-        <AnimatePresence mode="wait">
-          <motion.span
-            key={msgIndex}
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.3 }}
-            className="text-[14px] text-[#a1a1aa] font-medium"
-          >
-            {THINKING_MESSAGES[msgIndex]}
-          </motion.span>
-        </AnimatePresence>
       </div>
     </div>
   );
 }
 
-function CopyButton({ text }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <button
-      onClick={handleCopy}
-      className="opacity-0 group-hover:opacity-100 transition-opacity p-2 rounded-lg hover:bg-[#27272a] text-[#71717a] hover:text-white"
-      title="Copy message"
-    >
-      {copied ? <Check className="w-4 h-4 text-[#22c55e]" /> : <Copy className="w-4 h-4" />}
-    </button>
-  );
-}
-
-function WelcomeScreen({ onPromptClick, userName }) {
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="flex flex-col flex-1 px-8 pb-8 pt-6"
-    >
-      <div className="mb-8">
-        <div className="relative mb-6 group inline-block">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-[#18181b] to-[#09090b] border border-[#27272a] flex items-center justify-center shadow-2xl relative z-10 group-hover:border-white/20 transition-colors duration-500">
-            <Bot className="w-8 h-8 text-white" />
-          </div>
-          <div className="absolute inset-0 rounded-3xl bg-white blur-xl opacity-5 group-hover:opacity-10 transition-opacity duration-500 z-0" />
-        </div>
-
-        <h2 className="text-white font-semibold text-[32px] tracking-[-0.03em] leading-tight mb-4">
-          Hi {userName},<br />
-          I'm Nexus AI.<br />
-          <span className="text-[#a1a1aa]">Your AI Financial Copilot.</span>
-        </h2>
-        
-        <p className="text-[#a1a1aa] text-[16px] leading-relaxed max-w-[400px]">
-          I help you understand your money, manage expenses, analyze investments, build smarter budgets, improve savings, research stocks, understand markets, and make better financial decisions.
-        </p>
-        <p className="text-white font-medium text-[16px] mt-6">
-          How can I help you today?
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-auto">
-        {SUGGESTED_PROMPTS.map((p, i) => (
-          <motion.button
-            key={p.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            onClick={() => onPromptClick(p.label)}
-            className="text-left flex items-center gap-3 px-5 py-4 rounded-2xl bg-[#0f0f11] border border-[#27272a] hover:border-[#3f3f46] hover:bg-[#18181b] transition-all group shadow-sm hover:shadow-md"
-          >
-            <div className="text-[#71717a] group-hover:text-white transition-colors">
-              {p.icon}
-            </div>
-            <span className="text-[14px] font-medium text-[#a1a1aa] group-hover:text-white transition-colors">{p.label}</span>
-          </motion.button>
-        ))}
-      </div>
-    </motion.div>
-  );
-}
-
-function NexusAI({ isOpen, onClose }) {
+export function NexusChat({ isOpen, onClose }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [streamingText, setStreamingText] = useState("");
+
+  // AI settings
+  const [chatMode, setChatMode] = useState(() => localStorage.getItem("finpilot_chat_mode") || "gemini");
+  const [ollamaHost, setOllamaHost] = useState(() => localStorage.getItem("finpilot_ollama_host") || "http://127.0.0.1:11434");
+  const [ollamaModel, setOllamaModel] = useState(() => localStorage.getItem("finpilot_ollama_model") || "llama3");
+  const [showSettings, setShowSettings] = useState(false);
+  
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const abortControllerRef = useRef(null);
 
-  // Mocking profile name retrieval
-  const userProfileName = "Sarah";
-
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading, streamingText, scrollToBottom]);
+  }, [messages, streamingText, isOpen]);
+
+  // Persist configurations
+  useEffect(() => {
+    localStorage.setItem("finpilot_chat_mode", chatMode);
+  }, [chatMode]);
 
   useEffect(() => {
-    if (isOpen && textareaRef.current) {
-      setTimeout(() => textareaRef.current?.focus(), 300);
-    }
-  }, [isOpen]);
+    localStorage.setItem("finpilot_ollama_host", ollamaHost);
+  }, [ollamaHost]);
+
+  useEffect(() => {
+    localStorage.setItem("finpilot_ollama_model", ollamaModel);
+  }, [ollamaModel]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -165,102 +111,73 @@ function NexusAI({ isOpen, onClose }) {
     }
   }, [input]);
 
-  const handleSubmit = async (e) => {
-    e?.preventDefault();
-    if (!input.trim() || isLoading) return;
+  useEffect(() => {
+    if (isOpen && textareaRef.current) {
+      setTimeout(() => {
+        textareaRef.current.focus();
+      }, 100);
+    }
+  }, [isOpen]);
 
-    const userContent = input.trim();
+  // Main chat submit handler
+  const triggerChat = async (promptText) => {
+    if (!promptText.trim() || isLoading) return;
+
+    const userContent = promptText.trim();
     const userMsg = { id: Date.now().toString(), role: "user", content: userContent };
-
+    
     setMessages((prev) => [...prev, userMsg]);
-    setInput("");
     setIsLoading(true);
     setStreamingText("");
 
-    const systemPrompt = {
-      role: "system",
-      content:`
-You are Nexus AI, the AI Financial Intelligence Engine powering FinPilot AI.
+    const history = messages.map(m => ({ role: m.role, content: m.content }));
+    history.push({ role: "user", content: userContent });
 
-ROLE
-You are a specialized AI Financial Copilot that ONLY provides guidance on finance-related topics.
-
-SUPPORTED TOPICS
-Personal Finance, Budgeting, Expenses, Savings, Banking, Credit Cards, Loans, Taxes, Insurance, Retirement Planning, Investing, Stocks, ETFs, Mutual Funds, Bonds, Cryptocurrency, Portfolio Analysis, Asset Allocation, Risk Management, Wealth Management, Financial Planning, Business Finance, Corporate Finance, Market Analysis, Company Financials, Financial Ratios, Cash Flow, Inflation, Interest Rates, Financial Reports, and related economic concepts.
-
-OUT-OF-SCOPE
-If a request is unrelated to finance, reply ONLY with:
-
-"I'm Nexus AI, your AI Financial Copilot.
-
-I'm designed exclusively to help with finance-related topics including budgeting, investing, stock research, expenses, savings, portfolio analysis, financial planning, banking, taxation, and market intelligence.
-
-Please ask me a finance-related question and I'll be happy to help."
-
-RESPONSE STYLE
-- Use Markdown.
-- When appropriate, organize responses into:
-  ## Summary
-  ## Analysis
-  ## Key Insights
-  ## Recommendations
-  ## Next Steps
-- Use bullet points.
-- Keep responses concise, professional, and easy to understand.
-- Explain financial concepts in simple language.
-
-RULES
-- Never fabricate financial data, stock prices, or news.
-- If live data is unavailable, clearly state that.
-- Mention assumptions when information is incomplete.
-- Present both opportunities and risks.
-- Never guarantee profits or investment returns.
-- Always identify yourself as Nexus AI.
-`
-    };
-
-    const history = [systemPrompt, ...messages, userMsg].map(({ role, content }) => ({ role, content }));
+    abortControllerRef.current = new AbortController();
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || "";
-      abortControllerRef.current = new AbortController();
-
-      const res = await fetch(`${API_URL}/api/chat/stream`, {
+      const res = await fetch(`/api/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ 
+          messages: history,
+          mode: chatMode,
+          ollamaHost: ollamaHost,
+          ollamaModel: ollamaModel
+        }),
         signal: abortControllerRef.current.signal,
       });
 
       if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Request failed");
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to connect to AI service.");
       }
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
       let accumulated = "";
 
-      setIsLoading(false);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const data = line.slice(6).trim();
-          if (data === "[DONE]") break;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.delta) {
-              accumulated += parsed.delta;
-              setStreamingText(accumulated);
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n");
+          
+          for (const line of lines) {
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+              let parsed;
+              try { parsed = JSON.parse(line.slice(6)); } catch(err) {}
+              
+              if (parsed && parsed.error) {
+                throw new Error(parsed.error);
+              } else if (parsed && parsed.delta) {
+                accumulated += parsed.delta;
+                setStreamingText(accumulated);
+              }
             }
-          } catch {}
+          }
         }
       }
 
@@ -271,26 +188,19 @@ RULES
       setStreamingText("");
     } catch (err) {
       if (err.name === "AbortError") return;
-      try {
-        const API_URL = import.meta.env.VITE_API_URL || "";
-        const res = await fetch(`${API_URL}/api/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history }),
-        });
-        const data = await res.json();
-        if (data.text) {
-          setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: data.text }]);
-        } else {
-          throw new Error(data.error || "Failed");
-        }
-      } catch (fallbackErr) {
-        setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: `Error: ${fallbackErr.message}` }]);
-      }
+      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: `⚠️ **Notice**: ${err.message}` }]);
     } finally {
       setIsLoading(false);
       setStreamingText("");
     }
+  };
+
+  const handleSubmit = (e) => {
+    e?.preventDefault();
+    if (!input.trim() || isLoading) return;
+    const prompt = input;
+    setInput("");
+    triggerChat(prompt);
   };
 
   const handleKeyDown = (e) => {
@@ -300,169 +210,197 @@ RULES
     }
   };
 
-  const handleClear = () => {
-    abortControllerRef.current?.abort();
-    setMessages([]);
-    setStreamingText("");
-    setIsLoading(false);
-    setInput("");
+  const handleSuggestionClick = (text) => {
+    triggerChat(text);
   };
 
-  const hasMessages = messages.length > 0 || !!streamingText;
+  const handleOptionSelect = (text) => {
+    triggerChat(text);
+  };
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Minimalist Backdrop */}
-          <motion.div
+          <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-md z-40"
           />
-
-          {/* Premium Chat Panel */}
           <motion.div
-            initial={{ x: "100%", opacity: 0, scale: 0.98 }}
-            animate={{ x: 0, opacity: 1, scale: 1 }}
-            exit={{ x: "100%", opacity: 0, scale: 0.98 }}
-            transition={{ type: "spring", damping: 35, stiffness: 350, mass: 0.8 }}
-            className="fixed top-4 bottom-4 right-4 w-full max-w-[560px] bg-[#09090b] border border-[#27272a] rounded-[32px] shadow-[0_0_80px_rgba(0,0,0,0.8)] flex flex-col z-50 overflow-hidden"
+            initial={{ x: "100%", opacity: 0.5 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "100%", opacity: 0.5 }}
+            transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
+            className="fixed right-0 top-0 h-full w-full sm:w-[480px] lg:w-[680px] bg-[#0A0A0A] border-l border-white/5 z-[101] flex flex-col shadow-2xl overflow-hidden"
           >
-            {/* Elegant Header */}
-            <div className="px-8 py-5 border-b border-[#27272a]/50 flex items-center justify-between bg-[#09090b]/80 backdrop-blur-xl shrink-0 z-10">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-[16px] bg-[#121214] border border-[#27272a] flex items-center justify-center shadow-inner">
-                    <Bot className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#22c55e] border-[3px] border-[#09090b] animate-pulse" />
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0A0A0A]/80 backdrop-blur-md sticky top-0 z-10 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center border border-white/10">
+                  <Sparkles className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <h3 className="text-[17px] font-semibold text-white tracking-tight leading-none">Nexus AI</h3>
-                    <span className="px-1.5 py-0.5 rounded-md bg-[#18181b] border border-[#27272a] text-[10px] font-bold text-[#71717a] tracking-widest uppercase">
-                      Powered by GPT-5.6
-                    </span>
-                  </div>
-                  <p className="text-[13px] text-[#a1a1aa] font-medium">AI Financial Copilot</p>
+                  <h2 className="text-white font-semibold text-[15px] tracking-tight">Nexus AI</h2>
+                  <p className="text-[#a1a1aa] text-[12px] font-medium leading-none mt-1">Your Financial Copilot</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {hasMessages && (
-                  <button
-                    onClick={handleClear}
-                    className="p-2.5 text-[#71717a] hover:text-white transition-colors rounded-xl hover:bg-[#18181b]"
-                    title="Clear conversation"
-                  >
-                    <RotateCcw className="w-5 h-5" />
-                  </button>
-                )}
-                <button
+                <button 
                   onClick={onClose}
-                  className="p-2.5 text-[#71717a] hover:text-white transition-colors rounded-xl hover:bg-[#18181b] bg-[#121214] border border-[#27272a]"
+                  className="p-2 rounded-full hover:bg-white/5 text-[#a1a1aa] hover:text-white transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Conversation Area */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col relative bg-[#09090b]">
-              {!hasMessages ? (
-                <WelcomeScreen userName={userProfileName} onPromptClick={(p) => { setInput(p); setTimeout(handleSubmit, 50); }} />
-              ) : (
-                <div className="px-8 py-8 space-y-8">
-                  <AnimatePresence initial={false}>
-                    {messages.map((msg) => (
-                      <motion.div
-                        key={msg.id}
-                        initial={{ opacity: 0, y: 15, scale: 0.98 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        transition={{ type: "spring", damping: 25, stiffness: 400 }}
-                        className={cn(
-                          "flex gap-4",
-                          msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                        )}
+            {/* Chat Area */}
+            <div className="flex-1 overflow-y-auto scrollbar-hide relative bg-[#0A0A0A]">
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center min-h-full px-6 py-12 pb-32">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.4 }}
+                    className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center mb-8 shadow-2xl shadow-indigo-500/20 border border-white/10"
+                  >
+                    <Sparkles className="w-8 h-8 text-white" />
+                  </motion.div>
+                  
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.4 }}
+                    className="text-center mb-10"
+                  >
+                    <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 via-white to-purple-200 mb-4 tracking-tight">
+                      Good Morning, Maya
+                    </h1>
+                    <p className="text-[#a1a1aa] text-[15px] max-w-sm mx-auto leading-relaxed">
+                      I'm Nexus AI, your intelligent financial copilot. I help you understand expenses, investments, taxes, savings, and market intelligence.
+                    </p>
+                  </motion.div>
+
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.4 }}
+                    className="w-full max-w-lg space-y-3"
+                  >
+                    {suggestions.map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleSuggestionClick(item.label)}
+                        className="w-full flex items-center justify-between p-4 rounded-xl bg-[#121214] border border-white/5 hover:border-indigo-500/30 hover:bg-[#18181b] transition-all group"
                       >
-                        {msg.role === "assistant" && (
-                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#18181b] to-[#09090b] border border-[#27272a] flex items-center justify-center shrink-0 mt-1 shadow-sm">
-                            <Bot className="w-5 h-5 text-white" />
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-[#27272a] flex items-center justify-center group-hover:bg-indigo-500/20 transition-colors">
+                            <item.icon className="w-4 h-4 text-[#a1a1aa] group-hover:text-indigo-400" />
                           </div>
-                        )}
-
-                        <div className={cn("relative group max-w-[85%]", msg.role === "user" ? "items-end" : "items-start")}>
-                          <div
-                            className={cn(
-                              "px-6 py-4 rounded-3xl text-[15px] leading-relaxed",
-                              msg.role === "user"
-                                ? "bg-white text-black rounded-tr-sm font-medium shadow-sm"
-                                : "bg-[#121214] border border-[#27272a] text-[#e4e4e7] rounded-tl-sm markdown-body"
-                            )}
-                          >
-                            {msg.role === "user" ? msg.content : <Markdown>{msg.content}</Markdown>}
-                          </div>
-                          {msg.role === "assistant" && (
-                            <div className="flex mt-2 pl-2">
-                              <CopyButton text={msg.content} />
-                            </div>
-                          )}
+                          <span className="text-[14px] font-medium text-[#e4e4e7] group-hover:text-white transition-colors">
+                            {item.label}
+                          </span>
                         </div>
-                      </motion.div>
+                        <ArrowRight className="w-4 h-4 text-[#52525b] group-hover:text-indigo-400 group-hover:translate-x-1 transition-all" />
+                      </button>
                     ))}
-
-                    {streamingText && (
-                      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#18181b] to-[#09090b] border border-[#27272a] flex items-center justify-center shrink-0 mt-1 shadow-sm">
-                          <Bot className="w-5 h-5 text-white" />
+                  </motion.div>
+                </div>
+              ) : (
+                <div className="flex flex-col pb-6 pt-2">
+                  {messages.map((msg, i) => (
+                    <Message key={msg.id || i} msg={msg} />
+                  ))}
+                  {streamingText && (
+                    <Message msg={{ role: "assistant", content: streamingText }} isStreaming={true} />
+                  )}
+                  {isLoading && !streamingText && (
+                    <div className="flex w-full px-6 py-6 bg-[#121214] border-y border-white/5">
+                      <div className="flex gap-4 max-w-3xl mx-auto w-full">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center shrink-0 border border-white/10 relative overflow-hidden">
+                          <Sparkles className="w-4 h-4 text-white z-10" />
                         </div>
-                        <div className="max-w-[85%]">
-                          <div className="px-6 py-4 rounded-3xl bg-[#121214] border border-[#27272a] text-[#e4e4e7] rounded-tl-sm markdown-body text-[15px] leading-relaxed shadow-sm">
-                            <Markdown>{streamingText}</Markdown>
-                            <span className="inline-block w-2 h-4 bg-white ml-1 animate-pulse align-middle rounded-[2px]" />
+                        <div className="flex items-center h-8">
+                          <div className="flex gap-1.5">
+                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0 }} className="w-2 h-2 rounded-full bg-indigo-500" />
+                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-2 h-2 rounded-full bg-purple-500" />
+                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-2 h-2 rounded-full bg-blue-500" />
                           </div>
                         </div>
-                      </motion.div>
-                    )}
+                      </div>
+                    </div>
+                  )}
 
-                    {isLoading && !streamingText && <PremiumTypingIndicator />}
-                  </AnimatePresence>
+                  {/* Interactive Options list at the bottom of active chat (only when not loading or streaming) */}
+                  {!isLoading && !streamingText && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="px-6 py-6 max-w-3xl mx-auto w-full flex flex-col gap-3"
+                    >
+                      <p className="text-xs text-[#a1a1aa] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                        <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                        Interactive Reports & Actions:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { label: "Analyze Spending Trends", icon: "📊" },
+                          { label: "Explain NVIDIA's Growth", icon: "📈" },
+                          { label: "Review Portfolio Performance", icon: "💼" },
+                          { label: "Build a Monthly Budget", icon: "🪙" },
+                          { label: "Tax Planning & Indian Finance", icon: "🇮🇳" }
+                        ].map((opt) => (
+                          <button
+                            key={opt.label}
+                            type="button"
+                            onClick={() => handleOptionSelect(opt.label)}
+                            className="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-[#121214] border border-white/5 hover:border-indigo-500/40 hover:bg-[#18181b] text-xs text-[#e4e4e7] hover:text-white transition-all font-medium active:scale-95 shadow-lg"
+                          >
+                            <span>{opt.icon}</span>
+                            <span>{opt.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
                   <div ref={messagesEndRef} />
                 </div>
               )}
             </div>
 
             {/* Input Area */}
-            <div className="px-8 pb-6 pt-2 bg-[#09090b] shrink-0">
-              <form onSubmit={handleSubmit} className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-[#27272a] to-[#27272a] rounded-[28px] blur opacity-20 group-hover:opacity-40 transition duration-500" />
-                <div className="relative bg-[#121214] border border-[#27272a] rounded-[24px] shadow-sm transition-all focus-within:border-white/20 focus-within:ring-4 focus-within:ring-white/5 flex items-end">
+            <div className="p-6 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A] to-transparent shrink-0">
+              <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative group">
+                <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-blue-500/20 opacity-0 group-focus-within:opacity-100 blur transition-opacity duration-500"></div>
+                <div className="relative flex items-end gap-2 bg-[#121214] border border-[#27272a] group-focus-within:border-indigo-500/50 rounded-2xl p-2 shadow-lg transition-colors">
                   <textarea
                     ref={textareaRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder="Ask Nexus AI anything about your finances..."
-                    rows={1}
-                    className="w-full bg-transparent text-[15px] text-white pl-6 pr-4 py-5 focus:outline-none placeholder:text-[#52525b] resize-none leading-relaxed custom-scrollbar max-h-[200px]"
+                    className="w-full max-h-[200px] bg-transparent text-[#fafafa] placeholder:text-[#71717a] text-[15px] resize-none focus:outline-none px-3 py-3 scrollbar-hide leading-relaxed"
+                    rows="1"
                   />
-                  <div className="p-3 shrink-0">
-                    <button
-                      type="submit"
-                      disabled={!input.trim() || isLoading}
-                      className="w-10 h-10 flex items-center justify-center bg-white text-black rounded-xl hover:bg-[#e4e4e7] disabled:opacity-20 disabled:cursor-not-allowed transition-all active:scale-95 shadow-sm"
-                    >
-                      <Send className="w-5 h-5 ml-0.5" />
-                    </button>
-                  </div>
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || isLoading}
+                    className="shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg active:scale-95 mb-1 mr-1"
+                  >
+                    <Send className="w-4 h-4 ml-0.5" />
+                  </button>
+                </div>
+                <div className="text-center mt-3">
+                  <span className="text-[11px] text-[#52525b]">
+                    Powered by Live Gemini AI Engine &amp; High-Fidelity Intelligence Models
+                  </span>
                 </div>
               </form>
-              <p className="text-[12px] text-[#52525b] mt-4 text-center font-medium tracking-wide">
-                Nexus AI provides educational financial insights and should not be considered professional financial advice.
-              </p>
             </div>
           </motion.div>
         </>
@@ -470,5 +408,3 @@ RULES
     </AnimatePresence>
   );
 }
-
-export { NexusAI as CopilotChat };
