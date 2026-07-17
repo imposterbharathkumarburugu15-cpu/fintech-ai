@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Recommendation } from '../../types/report.types';
+import { Recommendation } from '..types/report.types';
 
 interface RecommendationCardProps {
   recommendation: Recommendation;
