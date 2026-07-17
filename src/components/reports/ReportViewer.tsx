@@ -1279,3 +1279,4 @@ const getChartType = (heading: string): 'pie' | 'bar' | 'line' => {
 };
 
 export default ReportViewer;
+

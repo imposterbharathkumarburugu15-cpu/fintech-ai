@@ -1,6 +1,6 @@
 // src/App.tsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { TopNav } from "./components/TopNav";
 import { CopilotChat } from "./components/NexusAI";
 import { AddTransactionModal } from "./components/AddTransactionModal";
@@ -13,6 +13,7 @@ import { ReportCenter } from "./components/ReportCenter";
 import { MarketIntelligence } from "./components/MarketIntelligence";
 import { SmartAlerts } from "./components/SmartAlerts";
 import ReportViewer from './components/reports/ReportViewer';
+import { supabase } from "./supabaseClient";
 
 type ViewType = "dashboard" | "expenses" | "stocks" | "portfolio" | "goals" | "reports" | "markets" | "alerts";
 
@@ -21,10 +22,29 @@ function App() {
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState<boolean>(false);
   const [activeView, setActiveView] = useState<ViewType>("dashboard");
   const [selectedReportType, setSelectedReportType] = useState<string>("monthly");
+  const [user, setUser] = useState<any>(null);
+
+  // Get user from Supabase
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => listener?.subscription.unsubscribe();
+  }, []);
 
   const handleExport = (format: 'pdf' | 'excel'): void => {
     console.log(`Exporting report as ${format}`);
-    alert(`📄 ${format.toUpperCase()} export coming soon!`);
+    alert(`${format.toUpperCase()} export coming soon!`);
+  };
+
+  // Wrapper function to handle view changes with proper typing
+  const handleViewChange = (view: string) => {
+    setActiveView(view as ViewType);
   };
 
   const renderView = (): React.ReactNode => {
@@ -51,7 +71,7 @@ function App() {
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                 }`}
               >
-                📊 Monthly Report
+                Monthly Report
               </button>
               <button
                 onClick={() => setSelectedReportType("expense")}
@@ -61,7 +81,7 @@ function App() {
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                 }`}
               >
-                💰 Expense Analysis
+                Expense Analysis
               </button>
               <button
                 onClick={() => setSelectedReportType("investment")}
@@ -71,7 +91,7 @@ function App() {
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                 }`}
               >
-                📈 Portfolio Report
+                Portfolio Report
               </button>
               <button
                 onClick={() => setSelectedReportType("health")}
@@ -81,7 +101,7 @@ function App() {
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                 }`}
               >
-                ❤️ Health Score
+                Health Score
               </button>
             </div>
             
@@ -105,8 +125,9 @@ function App() {
     <div className="flex flex-col h-screen w-full bg-[#040405] overflow-hidden text-[#fafafa] font-sans">
       <TopNav 
         activeView={activeView}
-        onViewChange={setActiveView}
-        onToggleChat={() => setIsChatOpen(true)} 
+        onViewChange={handleViewChange}
+        onToggleChat={() => setIsChatOpen(true)}
+        user={user}
       />
 
       <main className="flex-1 overflow-hidden relative">
