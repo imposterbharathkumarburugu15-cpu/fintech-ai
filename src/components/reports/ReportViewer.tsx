@@ -716,7 +716,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         // 3. Unusual Spending
         if (data.expenses.unusualSpending.length > 0) {
           sections.push({
-            heading: 'Let\'s Review These Expenses',
+            heading: "Let's Review These Expenses",
             content: 'We noticed some unusual transactions. Let\'s review them together:',
             type: 'warning',
             customComponent: (

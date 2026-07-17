@@ -74,7 +74,7 @@ export async function fetchReportData(userId?: string): Promise<ReportData> {
 
   } catch (error) {
     console.error('❌ Error fetching report data:', error);
-    throw error; // Don't fallback to mock - let the UI show error state
+    throw error;
   }
 }
 
@@ -91,23 +91,17 @@ function processTransactionsToReport(
   const credits = transactions.filter((t: any) => t.type === 'credit');
 
   // ===== 1. EXPENSE ANALYSIS =====
-  
-  // Total spending
   const totalSpent = debits.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
   // Spending by category
   const byCategory: Record<string, number> = {};
-  const categoryCounts: Record<string, number> = {};
-  
   debits.forEach((t: any) => {
     const category = t.category || 'Other';
     const amount = Number(t.amount);
     byCategory[category] = (byCategory[category] || 0) + amount;
-    categoryCounts[category] = (categoryCounts[category] || 0) + 1;
   });
 
   // ===== 2. MONTHLY TREND =====
-  
   const monthlyTrend: { month: string; amount: number }[] = [];
   const monthMap: Record<string, number> = {};
   
@@ -123,7 +117,6 @@ function processTransactionsToReport(
     monthMap[monthKey] += Number(t.amount);
   });
 
-  // Update monthly trend with amounts
   const monthKeys = Object.keys(monthMap);
   monthKeys.forEach((key, index) => {
     if (monthlyTrend[index]) {
@@ -131,12 +124,10 @@ function processTransactionsToReport(
     }
   });
 
-  // Sort by month order
   const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   monthlyTrend.sort((a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month));
 
   // ===== 3. RECURRING PAYMENTS =====
-  
   const recurringPayments: { name: string; amount: number; frequency: string }[] = [];
   const merchantFrequency: Record<string, { count: number; total: number; lastDate: Date }> = {};
   
@@ -152,7 +143,6 @@ function processTransactionsToReport(
     }
   });
 
-  // Find recurring (appears 3+ times in last 3 months)
   const threeMonthsAgo = new Date();
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
@@ -167,10 +157,8 @@ function processTransactionsToReport(
   });
 
   // ===== 4. UNUSUAL SPENDING =====
-  
-  // Calculate average transaction amount
   const avgAmount = debits.length > 0 ? totalSpent / debits.length : 0;
-  const threshold = Math.max(avgAmount * 2, 5000); // 2x average or 5000 minimum
+  const threshold = Math.max(avgAmount * 2, 5000);
   
   const unusualSpending = debits
     .filter((t: any) => Number(t.amount) > threshold)
@@ -183,51 +171,32 @@ function processTransactionsToReport(
     .slice(0, 5);
 
   // ===== 5. INCOME ANALYSIS =====
-  
   const totalIncome = credits.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
-  
-  // Calculate monthly income (average of last 3 months)
-  const now = new Date();
-  const threeMonthsIncome = credits.filter((t: any) => {
-    const date = new Date(t.occurred_at);
-    return date >= threeMonthsAgo;
-  });
-  const monthlyIncome = threeMonthsIncome.length > 0 
-    ? Math.round(threeMonthsIncome.reduce((sum: number, t: any) => sum + Number(t.amount), 0) / 3)
-    : totalIncome || 60000;
+  const monthlyIncome = totalIncome || 60000;
 
   // ===== 6. SAVINGS RATE =====
-  
   const savingsRate = monthlyIncome > 0 
     ? Math.round(((monthlyIncome - totalSpent) / monthlyIncome) * 100) 
     : 0;
 
-  // ===== 7. DAILY AVERAGE =====
-  
-  const firstTransaction = debits.length > 0 ? new Date(debits[debits.length - 1]?.occurred_at) : new Date();
-  const lastTransaction = debits.length > 0 ? new Date(debits[0]?.occurred_at) : new Date();
-  const daysDiff = Math.max(1, Math.ceil((lastTransaction.getTime() - firstTransaction.getTime()) / (1000 * 60 * 60 * 24)));
-  const avgDaily = debits.length > 0 ? Math.round(totalSpent / daysDiff) : 0;
-
-  // ===== 8. HEALTH SCORE =====
+  // ===== 7. HEALTH SCORE =====
+  const totalPortfolioValue = investments.reduce((sum: number, inv: any) => sum + Number(inv.value || 0), 0);
   
   const healthScore = calculateHealthScore(
     monthlyIncome,
     totalSpent,
-    investments.reduce((sum: number, inv: any) => sum + Number(inv.value || 0), 0),
+    totalPortfolioValue,
     savingsRate,
     goals
   );
 
-  // ===== 9. GOALS =====
-  
+  // ===== 8. GOALS =====
   const formattedGoals = goals.map((g: any) => ({
     name: g.name || 'Untitled Goal',
     target: Number(g.target_amount || g.target || 0),
     progress: Number(g.progress || 0)
   }));
 
-  // If no goals, create default based on data
   if (formattedGoals.length === 0) {
     const monthlySavings = Math.max(0, monthlyIncome - totalSpent);
     formattedGoals.push({
@@ -242,11 +211,9 @@ function processTransactionsToReport(
     });
   }
 
-  // ===== 10. ALERTS =====
-  
+  // ===== 9. ALERTS =====
   const alerts: any[] = [];
 
-  // Budget alert
   if (savingsRate < 10) {
     alerts.push({
       type: 'budget',
@@ -256,7 +223,6 @@ function processTransactionsToReport(
     });
   }
 
-  // Unusual spending alerts
   unusualSpending.slice(0, 3).forEach((us: any) => {
     alerts.push({
       type: 'spending',
@@ -266,7 +232,6 @@ function processTransactionsToReport(
     });
   });
 
-  // Recurring payments alert
   if (recurringPayments.length > 3) {
     const totalRecurring = recurringPayments.reduce((sum, r) => sum + r.amount, 0);
     alerts.push({
@@ -277,11 +242,7 @@ function processTransactionsToReport(
     });
   }
 
-  // ===== 11. INVESTMENTS =====
-  
-  const totalPortfolioValue = investments.reduce((sum: number, inv: any) => sum + Number(inv.value || 0), 0);
-  
-  // Sector allocation
+  // ===== 10. INVESTMENTS =====
   const sectorAllocation: Record<string, number> = {};
   investments.forEach((inv: any) => {
     const sector = inv.sector || 'Other';
@@ -294,7 +255,6 @@ function processTransactionsToReport(
     });
   }
 
-  // Holdings
   const holdings = investments.map((inv: any) => ({
     symbol: inv.symbol || 'N/A',
     shares: Number(inv.shares || 0),
@@ -302,8 +262,7 @@ function processTransactionsToReport(
     change: Number(inv.change || 0)
   }));
 
-  // ===== 12. BUILD REPORT =====
-  
+  // ===== BUILD REPORT =====
   return {
     expenses: {
       total: totalSpent,
