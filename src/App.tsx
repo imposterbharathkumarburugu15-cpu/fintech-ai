@@ -123,7 +123,10 @@ function App() {
           </div>
         );
       case "markets":
-        return <MarketIntelligence />;
+        return <MarketIntelligence onOpenStock={(symbol: string) => {
+          window.sessionStorage.setItem("finpilot-selected-stock", symbol);
+          setActiveView("stocks");
+        }} />;
       case "alerts":
         return <SmartAlerts />;
       default:
