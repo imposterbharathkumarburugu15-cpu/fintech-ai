@@ -1,9 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  X, Send, Sparkles, User, Copy, Check, RefreshCw, 
-  BarChart2, TrendingUp, Lightbulb, Wallet, ArrowRight,
-  MessageSquare, Settings, Sliders
+import {
+  X,
+  Send,
+  Sparkles,
+  User,
+  Copy,
+  Check,
+  RefreshCw,
+  BarChart2,
+  TrendingUp,
+  Lightbulb,
+  Wallet,
+  ArrowRight,
+  MessageSquare,
+  Settings,
+  Sliders,
 } from "lucide-react";
 import Markdown from "react-markdown";
 
@@ -11,7 +23,7 @@ const suggestions = [
   { icon: BarChart2, label: "Analyze my spending trends" },
   { icon: TrendingUp, label: "Explain NVIDIA's growth" },
   { icon: Wallet, label: "Review portfolio performance" },
-  { icon: Lightbulb, label: "Build a budget for next month" }
+  { icon: Lightbulb, label: "Build a budget for next month" },
 ];
 
 function Message({ msg, isStreaming }) {
@@ -25,7 +37,9 @@ function Message({ msg, isStreaming }) {
   };
 
   return (
-    <div className={`flex w-full px-6 py-6 ${isUser ? "" : "bg-[#121214] border-y border-white/5"}`}>
+    <div
+      className={`flex w-full px-6 py-6 ${isUser ? "" : "bg-[#121214] border-y border-white/5"}`}
+    >
       <div className="flex gap-4 max-w-3xl mx-auto w-full">
         {isUser ? (
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 border border-white/10 shadow-lg">
@@ -40,7 +54,9 @@ function Message({ msg, isStreaming }) {
 
         <div className="flex-1 min-w-0 mt-1">
           {isUser ? (
-            <p className="text-[#fafafa] font-medium leading-relaxed">{msg.content}</p>
+            <p className="text-[#fafafa] font-medium leading-relaxed">
+              {msg.content}
+            </p>
           ) : (
             <div className="text-[15px] text-[#e4e4e7] leading-relaxed [&>p]:mb-4 [&>ul]:mb-4 [&>ul]:list-disc [&>ul]:pl-6 [&>ol]:mb-4 [&>ol]:list-decimal [&>ol]:pl-6 [&>pre]:bg-[#0A0A0A] [&>pre]:border [&>pre]:border-white/10 [&>pre]:rounded-xl [&>pre]:p-4 [&>pre]:overflow-x-auto [&>h1]:text-white [&>h1]:font-semibold [&>h1]:mb-2 [&>h1]:mt-6 [&>h2]:text-white [&>h2]:font-semibold [&>h2]:mb-2 [&>h2]:mt-6 [&>h3]:text-white [&>h3]:font-semibold [&>h3]:mb-2 [&>h3]:mt-6 [&>code]:text-indigo-300 [&>code]:bg-indigo-500/10 [&>code]:px-1.5 [&>code]:py-0.5 [&>code]:rounded-md [&>strong]:text-white [&>table]:w-full [&>table]:border-collapse [&>table]:my-4 [&>table_th]:border-b [&>table_th]:border-white/10 [&>table_th]:pb-2 [&>table_th]:text-left [&>table_th]:text-white [&>table_td]:border-b [&>table_td]:border-white/5 [&>table_td]:py-2 [&>table_td]:text-[#e4e4e7]">
               <Markdown>{msg.content}</Markdown>
@@ -52,11 +68,15 @@ function Message({ msg, isStreaming }) {
 
           {!isUser && !isStreaming && (
             <div className="flex items-center gap-2 mt-4 pt-4 border-t border-white/5">
-              <button 
+              <button
                 onClick={handleCopy}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium text-[#a1a1aa] hover:text-white hover:bg-white/5 transition-colors"
               >
-                {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? (
+                  <Check className="w-3.5 h-3.5" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
                 {copied ? "Copied" : "Copy"}
               </button>
             </div>
@@ -74,11 +94,18 @@ export function NexusChat({ isOpen, onClose }) {
   const [streamingText, setStreamingText] = useState("");
 
   // AI settings
-  const [chatMode, setChatMode] = useState(() => localStorage.getItem("finpilot_chat_mode") || "gemini");
-  const [ollamaHost, setOllamaHost] = useState(() => localStorage.getItem("finpilot_ollama_host") || "http://127.0.0.1:11434");
-  const [ollamaModel, setOllamaModel] = useState(() => localStorage.getItem("finpilot_ollama_model") || "llama3");
+  const [chatMode, setChatMode] = useState(
+    () => localStorage.getItem("finpilot_chat_mode") || "groq",
+  );
+  const [ollamaHost, setOllamaHost] = useState(
+    () =>
+      localStorage.getItem("finpilot_ollama_host") || "http://127.0.0.1:11434",
+  );
+  const [ollamaModel, setOllamaModel] = useState(
+    () => localStorage.getItem("finpilot_ollama_model") || "llama3",
+  );
   const [showSettings, setShowSettings] = useState(false);
-  
+
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
   const abortControllerRef = useRef(null);
@@ -107,7 +134,8 @@ export function NexusChat({ isOpen, onClose }) {
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + "px";
+      textareaRef.current.style.height =
+        Math.min(textareaRef.current.scrollHeight, 200) + "px";
     }
   }, [input]);
 
@@ -124,13 +152,17 @@ export function NexusChat({ isOpen, onClose }) {
     if (!promptText.trim() || isLoading) return;
 
     const userContent = promptText.trim();
-    const userMsg = { id: Date.now().toString(), role: "user", content: userContent };
-    
+    const userMsg = {
+      id: Date.now().toString(),
+      role: "user",
+      content: userContent,
+    };
+
     setMessages((prev) => [...prev, userMsg]);
     setIsLoading(true);
     setStreamingText("");
 
-    const history = messages.map(m => ({ role: m.role, content: m.content }));
+    const history = messages.map((m) => ({ role: m.role, content: m.content }));
     history.push({ role: "user", content: userContent });
 
     abortControllerRef.current = new AbortController();
@@ -139,11 +171,11 @@ export function NexusChat({ isOpen, onClose }) {
       const res = await fetch(`/api/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           messages: history,
           mode: chatMode,
           ollamaHost: ollamaHost,
-          ollamaModel: ollamaModel
+          ollamaModel: ollamaModel,
         }),
         signal: abortControllerRef.current.signal,
       });
@@ -161,15 +193,17 @@ export function NexusChat({ isOpen, onClose }) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          
+
           const chunk = decoder.decode(value, { stream: true });
           const lines = chunk.split("\n");
-          
+
           for (const line of lines) {
             if (line.startsWith("data: ") && line !== "data: [DONE]") {
               let parsed;
-              try { parsed = JSON.parse(line.slice(6)); } catch(err) {}
-              
+              try {
+                parsed = JSON.parse(line.slice(6));
+              } catch (err) {}
+
               if (parsed && parsed.error) {
                 throw new Error(parsed.error);
               } else if (parsed && parsed.delta) {
@@ -183,12 +217,23 @@ export function NexusChat({ isOpen, onClose }) {
 
       setMessages((prev) => [
         ...prev,
-        { id: (Date.now() + 1).toString(), role: "assistant", content: accumulated },
+        {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: accumulated,
+        },
       ]);
       setStreamingText("");
     } catch (err) {
       if (err.name === "AbortError") return;
-      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: "assistant", content: `⚠️ **Notice**: ${err.message}` }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: `⚠️ **Notice**: ${err.message}`,
+        },
+      ]);
     } finally {
       setIsLoading(false);
       setStreamingText("");
@@ -222,7 +267,7 @@ export function NexusChat({ isOpen, onClose }) {
     <AnimatePresence>
       {isOpen && (
         <>
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -234,7 +279,12 @@ export function NexusChat({ isOpen, onClose }) {
             initial={{ x: "100%", opacity: 0.5 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0.5 }}
-            transition={{ type: "spring", damping: 30, stiffness: 300, mass: 0.8 }}
+            transition={{
+              type: "spring",
+              damping: 30,
+              stiffness: 300,
+              mass: 0.8,
+            }}
             className="fixed right-0 top-0 h-full w-full sm:w-[480px] lg:w-[680px] bg-[#0A0A0A] border-l border-white/5 z-[101] flex flex-col shadow-2xl overflow-hidden"
           >
             {/* Header */}
@@ -244,12 +294,16 @@ export function NexusChat({ isOpen, onClose }) {
                   <Sparkles className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-white font-semibold text-[15px] tracking-tight">Nexus AI</h2>
-                  <p className="text-[#a1a1aa] text-[12px] font-medium leading-none mt-1">Your Financial Copilot</p>
+                  <h2 className="text-white font-semibold text-[15px] tracking-tight">
+                    Nexus AI
+                  </h2>
+                  <p className="text-[#a1a1aa] text-[12px] font-medium leading-none mt-1">
+                    Your Financial Copilot
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button 
+                <button
                   onClick={onClose}
                   className="p-2 rounded-full hover:bg-white/5 text-[#a1a1aa] hover:text-white transition-colors"
                 >
@@ -262,7 +316,7 @@ export function NexusChat({ isOpen, onClose }) {
             <div className="flex-1 overflow-y-auto scrollbar-hide relative bg-[#0A0A0A]">
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-full px-6 py-12 pb-32">
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.4 }}
@@ -270,8 +324,8 @@ export function NexusChat({ isOpen, onClose }) {
                   >
                     <Sparkles className="w-8 h-8 text-white" />
                   </motion.div>
-                  
-                  <motion.div 
+
+                  <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.4 }}
@@ -281,11 +335,13 @@ export function NexusChat({ isOpen, onClose }) {
                       Good Morning, Maya
                     </h1>
                     <p className="text-[#a1a1aa] text-[15px] max-w-sm mx-auto leading-relaxed">
-                      I'm Nexus AI, your intelligent financial copilot. I help you understand expenses, investments, taxes, savings, and market intelligence.
+                      I'm Nexus AI, your intelligent financial copilot. I help
+                      you understand expenses, investments, taxes, savings, and
+                      market intelligence.
                     </p>
                   </motion.div>
 
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.4 }}
@@ -316,7 +372,10 @@ export function NexusChat({ isOpen, onClose }) {
                     <Message key={msg.id || i} msg={msg} />
                   ))}
                   {streamingText && (
-                    <Message msg={{ role: "assistant", content: streamingText }} isStreaming={true} />
+                    <Message
+                      msg={{ role: "assistant", content: streamingText }}
+                      isStreaming={true}
+                    />
                   )}
                   {isLoading && !streamingText && (
                     <div className="flex w-full px-6 py-6 bg-[#121214] border-y border-white/5">
@@ -326,9 +385,33 @@ export function NexusChat({ isOpen, onClose }) {
                         </div>
                         <div className="flex items-center h-8">
                           <div className="flex gap-1.5">
-                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0 }} className="w-2 h-2 rounded-full bg-indigo-500" />
-                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="w-2 h-2 rounded-full bg-purple-500" />
-                            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="w-2 h-2 rounded-full bg-blue-500" />
+                            <motion.div
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{
+                                repeat: Infinity,
+                                duration: 1,
+                                delay: 0,
+                              }}
+                              className="w-2 h-2 rounded-full bg-indigo-500"
+                            />
+                            <motion.div
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{
+                                repeat: Infinity,
+                                duration: 1,
+                                delay: 0.2,
+                              }}
+                              className="w-2 h-2 rounded-full bg-purple-500"
+                            />
+                            <motion.div
+                              animate={{ scale: [1, 1.2, 1] }}
+                              transition={{
+                                repeat: Infinity,
+                                duration: 1,
+                                delay: 0.4,
+                              }}
+                              className="w-2 h-2 rounded-full bg-blue-500"
+                            />
                           </div>
                         </div>
                       </div>
@@ -337,7 +420,7 @@ export function NexusChat({ isOpen, onClose }) {
 
                   {/* Interactive Options list at the bottom of active chat (only when not loading or streaming) */}
                   {!isLoading && !streamingText && (
-                    <motion.div 
+                    <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="px-6 py-6 max-w-3xl mx-auto w-full flex flex-col gap-3"
@@ -352,7 +435,10 @@ export function NexusChat({ isOpen, onClose }) {
                           { label: "Explain NVIDIA's Growth", icon: "📈" },
                           { label: "Review Portfolio Performance", icon: "💼" },
                           { label: "Build a Monthly Budget", icon: "🪙" },
-                          { label: "Tax Planning & Indian Finance", icon: "🇮🇳" }
+                          {
+                            label: "Tax Planning & Indian Finance",
+                            icon: "🇮🇳",
+                          },
                         ].map((opt) => (
                           <button
                             key={opt.label}
@@ -375,7 +461,10 @@ export function NexusChat({ isOpen, onClose }) {
 
             {/* Input Area */}
             <div className="p-6 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A] to-transparent shrink-0">
-              <form onSubmit={handleSubmit} className="max-w-3xl mx-auto relative group">
+              <form
+                onSubmit={handleSubmit}
+                className="max-w-3xl mx-auto relative group"
+              >
                 <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-indigo-500/20 via-purple-500/20 to-blue-500/20 opacity-0 group-focus-within:opacity-100 blur transition-opacity duration-500"></div>
                 <div className="relative flex items-end gap-2 bg-[#121214] border border-[#27272a] group-focus-within:border-indigo-500/50 rounded-2xl p-2 shadow-lg transition-colors">
                   <textarea
@@ -397,7 +486,8 @@ export function NexusChat({ isOpen, onClose }) {
                 </div>
                 <div className="text-center mt-3">
                   <span className="text-[11px] text-[#52525b]">
-                    Powered by Live Gemini AI Engine &amp; High-Fidelity Intelligence Models
+                    Powered by Groq Llama 3.3 Engine &amp; High-Fidelity
+                    Intelligence Models
                   </span>
                 </div>
               </form>

@@ -12,7 +12,7 @@ import {
   Users,
 } from "lucide-react";
 
-const QUICK_SEARCHES = ["AAPL", "NVDA", "TSLA", "MSFT", "RELIANCE.NS"];
+const QUICK_SEARCHES = ["AAPL", "NVDA", "TSLA", "MSFT", "GOOGL"];
 
 function MetricRow({ label, value, last = false }) {
   return (
@@ -105,19 +105,32 @@ function StockResearch() {
   const [inputVal, setInputVal] = useState("");
   const API_URL = import.meta.env.VITE_API_URL; 
 
-  // Reusable core engine to query your Node/Express server node
   const fetchStockData = async (tickerSymbol) => {
     setLoading(true);
     setError(null);
     try {
+<<<<<<< HEAD
+      const response = await fetch(`/api/stock/${tickerSymbol}`);
+
+      // Extract the server payload first to see what it sent us
+=======
      const response = await fetch(   `${API_URL}/api/stock/${encodeURIComponent(tickerSymbol)}` );;
       if (!response.ok) {
         throw new Error("Ticker symbol not found or network threshold failed.");
       }
+>>>>>>> origin/main
       const data = await response.json();
+
+      if (!response.ok) {
+        // Bubble up the real custom DEBUG SYSTEM ERROR string from Node!
+        throw new Error(
+          data.error || "Ticker symbol not found or network threshold failed.",
+        );
+      }
+
       setStock(data);
     } catch (err) {
-      console.error(err);
+      console.error("Frontend Data Core Error Catch:", err);
       setError(
         err.message || "Something went wrong fetching market execution models.",
       );
@@ -164,10 +177,6 @@ function StockResearch() {
             AI-powered company analysis — US & Indian markets.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-[12px] text-[#71717a]">
-          <Globe className="w-4 h-4" />
-          <span>NYSE · NASDAQ · NSE · BSE</span>
-        </div>
       </div>
 
       {/* Search Bar Input Form */}
@@ -181,7 +190,7 @@ function StockResearch() {
             type="text"
             value={inputVal}
             onChange={(e) => setInputVal(e.target.value)}
-            placeholder="Search — AAPL, NVDA, RELIANCE.NS, INFY.NS..."
+            placeholder="Search — AAPL, NVDA, GOOGL, INFY.NS..."
             className="w-full bg-[#18181b] border border-[#27272a] rounded-xl pl-11 pr-32 py-3.5 text-[14px] text-white placeholder:text-[#52525b] focus:outline-none focus:border-[#3b82f6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all"
           />
           <button
