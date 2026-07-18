@@ -103,26 +103,20 @@ function StockResearch() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [inputVal, setInputVal] = useState("");
-  const API_URL = import.meta.env.VITE_API_URL; 
+  const API_URL = import.meta.env.VITE_API_URL || "";
 
   const fetchStockData = async (tickerSymbol) => {
     setLoading(true);
     setError(null);
     try {
-<<<<<<< HEAD
-      const response = await fetch(`/api/stock/${tickerSymbol}`);
-
-      // Extract the server payload first to see what it sent us
-=======
-     const response = await fetch(   `${API_URL}/api/stock/${encodeURIComponent(tickerSymbol)}` );;
-      if (!response.ok) {
-        throw new Error("Ticker symbol not found or network threshold failed.");
-      }
->>>>>>> origin/main
+      // 1. Fetches using the deployment API_URL prefix and safe URL encoding
+      const response = await fetch(
+        `${API_URL}/api/stock/${encodeURIComponent(tickerSymbol)}`,
+      );
       const data = await response.json();
 
+      // 2. Checks network status and bubbles up the custom backend JSON error message
       if (!response.ok) {
-        // Bubble up the real custom DEBUG SYSTEM ERROR string from Node!
         throw new Error(
           data.error || "Ticker symbol not found or network threshold failed.",
         );
