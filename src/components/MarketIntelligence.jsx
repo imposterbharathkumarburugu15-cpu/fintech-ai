@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Bell, ChevronRight, CircleDollarSign, Clock3, ExternalLink, Flame, LineChart, Plus, RefreshCw, Search, Star, TrendingDown, TrendingUp, Zap } from "lucide-react";
+import { ChevronRight, CircleDollarSign, Clock3, ExternalLink, Flame, LineChart, Plus, Search, Star, TrendingDown, TrendingUp, Zap } from "lucide-react";
 
 const FINNHUB_KEY = import.meta.env.VITE_FINNHUB_API_KEY;
 const marketSymbols = {
@@ -96,7 +96,7 @@ export function MarketIntelligence({ onOpenStock }) {
     <main className="relative mx-auto max-w-[1680px] px-4 py-5 sm:px-7 lg:px-10 lg:py-8">
       <header className="flex flex-col gap-5 border-b border-white/[.07] pb-6 xl:flex-row xl:items-center xl:justify-between">
         <div><div className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.2em] text-violet-300"><span className="h-1.5 w-1.5 rounded-full bg-[#22c55e] shadow-[0_0_12px_#22c55e]" />Global intelligence network</div><h1 className="text-3xl font-semibold tracking-[-.045em] sm:text-4xl">Market <span className="market-shimmer">Analysis</span></h1><p className="mt-2 text-sm text-zinc-400">Real-time global financial markets, engineered for clarity.</p></div>
-        <div className="flex flex-wrap items-center gap-2.5"><div className="market-search"><Search size={16}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search an instrument" /><kbd>⌘ K</kbd></div><button onClick={refresh} className="market-icon-btn" aria-label="Refresh markets"><RefreshCw size={17} className={refreshing ? "animate-spin" : ""}/></button><button className="market-icon-btn relative" aria-label="Notifications"><Bell size={17}/><i /></button><div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[.045] py-1.5 pl-2 pr-3"><div className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-blue-500 to-violet-600 text-[10px] font-bold">AS</div><span className="text-xs font-medium text-zinc-300">Aarav</span></div></div>
+        <div className="flex flex-wrap items-center gap-2.5"><div className="market-search"><Search size={16}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search an instrument" /><kbd>⌘ K</kbd></div></div>
       </header>
 
       <section className="mt-7 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
