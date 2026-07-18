@@ -1,267 +1,201 @@
-import React, { useState } from "react";
-import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts";
-import { ArrowUpRight, ArrowDownRight, Activity, Search, Globe, TrendingUp, Info } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  BarChart3,
+  Clock3,
+  ExternalLink,
+  Globe2,
+  Newspaper,
+  RefreshCw,
+  Search,
+  TrendingUp,
+} from "lucide-react";
+import { motion } from "motion/react";
 
-const INDICES = [
-  { id: "sp500", name: "S&P 500", exchange: "US", price: "5,438.50", change: "+0.52%", positive: true, data: [{ t: "9:30", v: 5410 }, { t: "11:00", v: 5422 }, { t: "13:00", v: 5425 }, { t: "16:00", v: 5438 }], color: "#22c55e" },
-  { id: "nasdaq", name: "NASDAQ", exchange: "US", price: "17,970.20", change: "+0.85%", positive: true, data: [{ t: "9:30", v: 17820 }, { t: "11:00", v: 17890 }, { t: "13:00", v: 17910 }, { t: "16:00", v: 17970 }], color: "#22c55e" },
-  { id: "nifty50", name: "NIFTY 50", exchange: "IN", price: "24,502.15", change: "+0.34%", positive: true, data: [{ t: "9:15", v: 24380 }, { t: "11:00", v: 24455 }, { t: "13:00", v: 24460 }, { t: "15:30", v: 24502 }], color: "#22c55e" },
-  { id: "sensex", name: "SENSEX", exchange: "IN", price: "80,519.34", change: "-0.12%", positive: false, data: [{ t: "9:15", v: 80620 }, { t: "11:00", v: 80550 }, { t: "13:00", v: 80570 }, { t: "15:30", v: 80519 }], color: "#ef4444" },
-  { id: "bitcoin", name: "BTC-USD", exchange: "Crypto", price: "$65,920.00", change: "+1.20%", positive: true, data: [{ t: "9:30", v: 65120 }, { t: "11:00", v: 65280 }, { t: "13:00", v: 65150 }, { t: "16:00", v: 65920 }], color: "#f59e0b" },
+const FINNHUB_KEY = import.meta.env.VITE_FINNHUB_API_KEY;
+
+const WATCHLIST = [
+  { symbol: "AAPL", name: "Apple" },
+  { symbol: "MSFT", name: "Microsoft" },
+  { symbol: "NVDA", name: "NVIDIA" },
+  { symbol: "AMZN", name: "Amazon" },
+  { symbol: "GOOGL", name: "Alphabet" },
+  { symbol: "TSLA", name: "Tesla" },
 ];
 
-const TRENDING = [
-  { sym: "NVDA", name: "NVIDIA", price: "875.40", change: "+2.34%", positive: true },
-  { sym: "AAPL", name: "Apple Inc.", price: "214.32", change: "+1.24%", positive: true },
-  { sym: "TCS", name: "Tata Consultancy", price: "3920.00", change: "-0.43%", positive: false },
-  { sym: "TSLA", name: "Tesla Inc.", price: "248.10", change: "+3.10%", positive: true },
-];
+const money = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  maximumFractionDigits: 2,
+});
 
-function CustomTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-[#18181b]/90 backdrop-blur-md border border-[#27272a] rounded-lg px-3 py-2 shadow-2xl">
-      <p className="text-[11px] text-[#71717a] font-mono mb-0.5">{label}</p>
-      <p className="text-[13px] font-bold text-white font-mono">{payload[0].value?.toLocaleString()}</p>
-    </div>
-  );
-}
-
-function MiniChart({ data, color }) {
-  return (
-    <div className="h-10 w-full mt-2">
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={data}>
-          <defs>
-            <linearGradient id={`grad-${color}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.4} />
-              <stop offset="100%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <Area type="monotone" dataKey="v" stroke={color} strokeWidth={1.5} fill={`url(#grad-${color})`} dot={false} />
-        </AreaChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-// Simulated Marquee Ticker
-function TickerTape() {
-  const tickerItems = [...INDICES, ...TRENDING, ...INDICES]; // Duplicate for seamless scroll
-  return (
-    <div className="w-full bg-[#09090b] border-b border-[#1e1e22] py-2.5 overflow-hidden flex whitespace-nowrap z-20 relative">
-      <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#09090b] to-transparent z-10" />
-      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#09090b] to-transparent z-10" />
-      <motion.div
-        animate={{ x: [0, -1000] }}
-        transition={{ repeat: Infinity, ease: "linear", duration: 25 }}
-        className="flex gap-8 px-4"
-      >
-        {tickerItems.map((item, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <span className="text-[12px] font-bold text-white tracking-wider">{item.sym || item.id.toUpperCase()}</span>
-            <span className="text-[12px] font-mono text-[#a1a1aa]">{item.price}</span>
-            <span className={`text-[11px] font-bold font-mono ${item.positive ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-              {item.change}
-            </span>
-          </div>
-        ))}
-      </motion.div>
-    </div>
-  );
-}
+const number = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 
 function MarketIntelligence() {
-  const [activeId, setActiveId] = useState("sp500");
-  const [searchQuery, setSearchQuery] = useState("");
-  const activeIndex = INDICES.find((i) => i.id === activeId);
+  const [quotes, setQuotes] = useState([]);
+  const [news, setNews] = useState([]);
+  const [query, setQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  const loadMarketData = useCallback(async ({ manual = false } = {}) => {
+    if (!FINNHUB_KEY) {
+      setError("Add VITE_FINNHUB_API_KEY to your .env file to enable live market data.");
+      setLoading(false);
+      return;
+    }
+
+    manual ? setRefreshing(true) : setLoading(true);
+    setError("");
+
+    try {
+      const quoteRequests = WATCHLIST.map(async (stock) => {
+        const response = await fetch(
+          `https://finnhub.io/api/v1/quote?symbol=${stock.symbol}&token=${FINNHUB_KEY}`
+        );
+        if (!response.ok) throw new Error("Unable to load live quotes.");
+        return { ...stock, ...(await response.json()) };
+      });
+
+      const newsRequest = fetch(
+        `https://finnhub.io/api/v1/news?category=general&token=${FINNHUB_KEY}`
+      ).then((response) => {
+        if (!response.ok) throw new Error("Unable to load market news.");
+        return response.json();
+      });
+
+      const [nextQuotes, nextNews] = await Promise.all([
+        Promise.all(quoteRequests),
+        newsRequest,
+      ]);
+
+      setQuotes(nextQuotes.filter((quote) => Number.isFinite(quote.c) && quote.c > 0));
+      setNews(Array.isArray(nextNews) ? nextNews.slice(0, 4) : []);
+      setLastUpdated(new Date());
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Market data is temporarily unavailable.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMarketData();
+    const refreshInterval = window.setInterval(() => loadMarketData(), 60_000);
+    return () => window.clearInterval(refreshInterval);
+  }, [loadMarketData]);
+
+  const displayedQuotes = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return quotes;
+    return quotes.filter((quote) =>
+      `${quote.symbol} ${quote.name}`.toLowerCase().includes(normalizedQuery)
+    );
+  }, [query, quotes]);
+
+  const advancing = quotes.filter((quote) => quote.dp >= 0).length;
+  const averageMove = quotes.length
+    ? quotes.reduce((total, quote) => total + (Number(quote.dp) || 0), 0) / quotes.length
+    : 0;
 
   return (
-    <div className="flex flex-col h-full bg-[#09090b]">
-      
-      {/* Ticker Tape */}
-      <TickerTape />
-
-      <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-        <div className="max-w-[1080px] mx-auto">
-          {/* Header */}
-          <div className="flex justify-between items-end mb-8 animate-fade-in-up">
-            <div>
-              <p className="text-[#3b82f6] text-[11px] font-bold tracking-[0.15em] mb-2 uppercase flex items-center gap-2">
-                <Globe className="w-3.5 h-3.5" /> Market Terminal
-              </p>
-              <h1 className="text-[34px] font-semibold text-white tracking-[-0.03em] mb-1 leading-none">
-                Market Intelligence
-              </h1>
-              <p className="text-[#a1a1aa] text-[15px]">Bloomberg-style global indices & stock research.</p>
+    <div className="min-h-full bg-[#09090b] px-5 py-6 text-white sm:px-8 sm:py-8">
+      <div className="mx-auto max-w-[1400px]">
+        <div className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">
+              <Globe2 className="h-4 w-4" /> Live market terminal
             </div>
-            
-            <div className="relative w-80">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71717a]" />
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Market Intelligence</h1>
+            <p className="mt-2 text-sm text-[#a1a1aa]">Monitor your watchlist, price momentum, and the news moving markets.</p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#71717a]" />
               <input
-                type="text"
-                placeholder="Search Ticker (e.g. AAPL, INFY)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#121214] border border-[#27272a] rounded-full pl-10 pr-4 py-2.5 text-[13px] text-white placeholder:text-[#52525b] focus:outline-none focus:border-[#3b82f6] focus:ring-2 focus:ring-[#3b82f6]/20 transition-all font-mono"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Filter watchlist"
+                className="input-base h-11 w-full pl-10 pr-4 sm:w-60"
               />
-            </div>
-          </div>
-
-          {/* Indices Row */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6 animate-fade-in-up stagger-1">
-            {INDICES.map((idx) => (
-              <button
-                key={idx.id}
-                onClick={() => setActiveId(idx.id)}
-                className={`text-left p-4 rounded-2xl border transition-all duration-300 relative overflow-hidden group ${
-                  activeId === idx.id
-                    ? "border-[#3b82f6]/50 bg-[#121214] shadow-[0_0_30px_rgba(59,130,246,0.1)]"
-                    : "border-[#27272a] bg-[#0f0f11] hover:border-[#3f3f46] hover:bg-[#121214]"
-                }`}
-              >
-                {activeId === idx.id && <div className="absolute inset-0 bg-[#3b82f6]/5 opacity-100 transition-opacity" />}
-                <div className="relative z-10">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-[11px] font-bold text-[#71717a] uppercase tracking-wider">{idx.exchange}</span>
-                    <span className={`text-[11px] font-bold font-mono flex items-center ${idx.positive ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-                      {idx.positive ? <ArrowUpRight className="w-3 h-3 mr-0.5" /> : <ArrowDownRight className="w-3 h-3 mr-0.5" />}
-                      {idx.change}
-                    </span>
-                  </div>
-                  <h3 className="text-[14px] font-semibold text-white mb-0.5">{idx.name}</h3>
-                  <p className="text-[16px] font-bold text-white font-mono tracking-tight">{idx.price}</p>
-                </div>
-                <MiniChart data={idx.data} color={idx.color} />
-              </button>
-            ))}
-          </div>
-
-          {/* Main Chart Section */}
-          <div className="bg-[#0f0f11] border border-[#27272a] rounded-3xl p-8 mb-6 relative overflow-hidden animate-fade-in-up stagger-2 shadow-xl">
-            {/* Vercel-like Glow */}
-            <div className="absolute top-0 right-1/4 w-[600px] h-[300px] bg-[#3b82f6]/10 blur-[100px] pointer-events-none rounded-full translate-y-[-50%]" />
-            
-            <div className="relative z-10 flex justify-between items-start mb-8">
-              <div className="flex items-center gap-5">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#27272a] to-[#18181b] border border-[#3f3f46] flex items-center justify-center">
-                  <Activity className="w-5 h-5 text-[#a1a1aa]" />
-                </div>
-                <div>
-                  <h2 className="text-[22px] font-bold text-white tracking-tight leading-none mb-2">{activeIndex.name}</h2>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[18px] text-white font-mono font-semibold">{activeIndex.price}</span>
-                    <span className={`text-[13px] font-bold font-mono flex items-center ${activeIndex.positive ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-                      {activeIndex.positive ? <ArrowUpRight className="w-4 h-4 mr-0.5" /> : <ArrowDownRight className="w-4 h-4 mr-0.5" />}
-                      {activeIndex.change} Today
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex bg-[#18181b] p-1 rounded-xl border border-[#27272a]">
-                {["1D", "1W", "1M", "YTD", "ALL"].map((tf) => (
-                  <button key={tf} className={`px-4 py-1.5 rounded-lg text-[12px] font-bold tracking-wide transition-all ${tf === "1D" ? "bg-[#27272a] text-white shadow-sm" : "text-[#71717a] hover:text-[#a1a1aa]"}`}>
-                    {tf}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="h-[320px] w-full relative z-10">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={activeIndex.data} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="mainGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="t" axisLine={false} tickLine={false} tick={{ fill: "#52525b", fontSize: 11, fontFamily: "monospace" }} dy={10} />
-                  <YAxis domain={["auto", "auto"]} axisLine={false} tickLine={false} tick={{ fill: "#52525b", fontSize: 11, fontFamily: "monospace" }} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#3f3f46", strokeWidth: 1, strokeDasharray: "4 4" }} />
-                  <Area type="monotone" dataKey="v" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#mainGrad)" activeDot={{ r: 5, fill: "#fff", stroke: "#3b82f6", strokeWidth: 2 }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Bottom Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up stagger-3">
-            
-            {/* Fear & Greed */}
-            <div className="bg-[#0f0f11] border border-[#27272a] rounded-3xl p-6 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#f59e0b]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              <div className="flex items-center justify-between mb-6 relative z-10">
-                <h3 className="text-white font-semibold text-[15px]">Fear & Greed</h3>
-                <TrendingUp className="w-4 h-4 text-[#f59e0b]" />
-              </div>
-              <div className="flex flex-col items-center justify-center relative z-10">
-                <div className="relative w-28 h-28 mb-4">
-                  <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" stroke="#27272a" strokeWidth="8" fill="none" strokeDasharray="125 251" strokeDashoffset="-125" strokeLinecap="round" />
-                    <circle cx="50" cy="50" r="40" stroke="#f59e0b" strokeWidth="8" fill="none" strokeDasharray="170 251" strokeDashoffset="-125" strokeLinecap="round" style={{ filter: "drop-shadow(0 0 8px rgba(245,158,11,0.4))" }} />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pt-2">
-                    <span className="text-2xl font-bold text-white font-mono">68</span>
-                  </div>
-                </div>
-                <span className="text-[#f59e0b] font-bold text-[15px] uppercase tracking-wider mb-1">Greed</span>
-                <p className="text-[12px] text-[#71717a] text-center max-w-[180px]">Market momentum is exceptionally strong. Exercise caution.</p>
-              </div>
-            </div>
-
-            {/* Trending Equities Table */}
-            <div className="lg:col-span-2 bg-[#0f0f11] border border-[#27272a] rounded-3xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-white font-semibold text-[15px]">Trending Equities</h3>
-                <button className="text-[#3b82f6] text-[12px] font-bold hover:text-[#60a5fa] transition-colors">View All</button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-[13px]">
-                  <thead>
-                    <tr className="border-b border-[#27272a]">
-                      <th className="text-left text-[#52525b] font-bold uppercase tracking-wider pb-3 font-mono text-[10px]">Ticker</th>
-                      <th className="text-right text-[#52525b] font-bold uppercase tracking-wider pb-3 font-mono text-[10px]">Price</th>
-                      <th className="text-right text-[#52525b] font-bold uppercase tracking-wider pb-3 font-mono text-[10px]">24H Change</th>
-                      <th className="text-right text-[#52525b] font-bold uppercase tracking-wider pb-3 font-mono text-[10px]">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {TRENDING.map((s, i) => (
-                      <tr key={s.sym} className="border-b border-[#1e1e22] last:border-0 hover:bg-[#121214] transition-colors group cursor-pointer">
-                        <td className="py-3.5">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-[#18181b] border border-[#27272a] flex items-center justify-center text-[10px] font-bold text-white group-hover:border-[#3b82f6]/30 transition-colors">
-                              {s.sym.substring(0,2)}
-                            </div>
-                            <div>
-                              <p className="font-bold text-white font-mono text-[14px]">{s.sym}</p>
-                              <p className="text-[11px] text-[#71717a]">{s.name}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3.5 text-right font-mono text-white text-[14px]">${s.price}</td>
-                        <td className={`py-3.5 text-right font-mono text-[13px] font-bold ${s.positive ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-                          {s.change}
-                        </td>
-                        <td className="py-3.5 text-right">
-                          <button className="px-3 py-1.5 rounded-lg bg-[#18181b] text-[#a1a1aa] text-[11px] font-bold hover:bg-[#27272a] hover:text-white transition-colors border border-[#27272a]">
-                            Analyze
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
+            </label>
+            <button
+              type="button"
+              onClick={() => loadMarketData({ manual: true })}
+              disabled={refreshing || !FINNHUB_KEY}
+              className="btn-secondary flex h-11 items-center justify-center gap-2 px-4 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
           </div>
         </div>
+
+        <section className="relative mb-7 overflow-hidden rounded-3xl border border-blue-400/20 bg-gradient-to-br from-[#172554] via-[#111827] to-[#17102e] p-6 shadow-[0_20px_60px_rgba(30,64,175,0.18)] sm:p-8">
+          <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl" />
+          <div className="absolute bottom-0 left-1/3 h-40 w-56 rounded-full bg-violet-500/10 blur-3xl" />
+          <div className="relative grid gap-7 md:grid-cols-[1fr_auto] md:items-center">
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-sm font-medium text-blue-200"><TrendingUp className="h-4 w-4" /> Market pulse</div>
+              <h2 className="max-w-xl text-2xl font-semibold tracking-tight sm:text-3xl">A clearer view of what is moving your portfolio.</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-blue-100/70">Real-time quotes and curated headlines from Finnhub, refreshed automatically every minute.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:min-w-80">
+              <PulseMetric label="Advancing" value={quotes.length ? `${advancing}/${quotes.length}` : "—"} tone="text-emerald-300" />
+              <PulseMetric label="Average move" value={quotes.length ? `${averageMove >= 0 ? "+" : ""}${averageMove.toFixed(2)}%` : "—"} tone={averageMove >= 0 ? "text-emerald-300" : "text-rose-300"} />
+            </div>
+          </div>
+        </section>
+
+        {error && <div className="mb-6 rounded-2xl border border-amber-400/25 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">{error}</div>}
+
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Watchlist</h2>
+          <span className="flex items-center gap-1.5 text-xs text-[#71717a]"><Clock3 className="h-3.5 w-3.5" />{lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Waiting for data"}</span>
+        </div>
+
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {loading ? Array.from({ length: 6 }).map((_, index) => <div key={index} className="h-48 animate-shimmer rounded-2xl border border-[#27272a]" />) : displayedQuotes.map((quote, index) => <QuoteCard key={quote.symbol} quote={quote} index={index} />)}
+        </section>
+
+        {!loading && !error && displayedQuotes.length === 0 && <div className="rounded-2xl border border-dashed border-[#3f3f46] px-6 py-12 text-center text-sm text-[#a1a1aa]">No matching stocks in this watchlist.</div>}
+
+        <div className="mt-10 mb-4 flex items-center gap-2"><Newspaper className="h-5 w-5 text-violet-400" /><h2 className="text-lg font-semibold">Market headlines</h2></div>
+        <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {loading ? Array.from({ length: 4 }).map((_, index) => <div key={index} className="h-40 animate-shimmer rounded-2xl border border-[#27272a]" />) : news.map((story, index) => <NewsCard key={story.id || story.url || index} story={story} />)}
+        </section>
       </div>
     </div>
   );
+}
+
+function PulseMetric({ label, value, tone }) {
+  return <div className="rounded-2xl border border-white/10 bg-black/10 p-4 backdrop-blur-sm"><p className="text-xs font-medium uppercase tracking-wider text-blue-100/60">{label}</p><p className={`mt-1 text-2xl font-semibold ${tone}`}>{value}</p></div>;
+}
+
+function QuoteCard({ quote, index }) {
+  const positive = Number(quote.dp) >= 0;
+  const change = Number(quote.d) || 0;
+  const percent = Number(quote.dp) || 0;
+  return <motion.article initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }} whileHover={{ y: -3 }} className="group rounded-2xl border border-[#27272a] bg-[#121214] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.18)] transition-colors hover:border-[#3f3f46]">
+    <div className="flex items-start justify-between gap-4"><div><p className="text-base font-semibold">{quote.name}</p><p className="mt-0.5 font-mono text-xs text-[#71717a]">{quote.symbol}</p></div><div className={`flex h-9 w-9 items-center justify-center rounded-xl ${positive ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>{positive ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}</div></div>
+    <div className="mt-6 flex items-end justify-between"><p className="font-mono text-2xl font-semibold tracking-tight">{money.format(quote.c)}</p><p className={`rounded-lg px-2 py-1 font-mono text-xs font-semibold ${positive ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>{positive ? "+" : ""}{percent.toFixed(2)}%</p></div>
+    <div className="mt-5 grid grid-cols-3 border-t border-white/5 pt-4 text-xs"><Metric label="Open" value={money.format(quote.o)} /><Metric label="Day high" value={money.format(quote.h)} /><Metric label="Change" value={`${change >= 0 ? "+" : ""}${number.format(change)}`} align="right" /></div>
+  </motion.article>;
+}
+
+function Metric({ label, value, align = "left" }) {
+  return <div className={`min-w-0 ${align === "right" ? "text-right" : ""}`}><p className="text-[#71717a]">{label}</p><p className="mt-1 truncate font-mono text-[#d4d4d8]">{value}</p></div>;
+}
+
+function NewsCard({ story }) {
+  const published = story.datetime ? new Date(story.datetime * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "Latest";
+  return <article className="group rounded-2xl border border-[#27272a] bg-[#121214] p-5 transition-colors hover:border-[#3f3f46]"><div className="flex items-center justify-between gap-4 text-xs"><span className="font-medium text-violet-300">{story.source || "Market news"}</span><span className="text-[#71717a]">{published}</span></div><h3 className="mt-3 line-clamp-2 text-base font-semibold leading-6 text-[#f4f4f5]">{story.headline}</h3>{story.summary && <p className="mt-2 line-clamp-2 text-sm leading-5 text-[#a1a1aa]">{story.summary}</p>}{story.url && <a href={story.url} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-blue-400 hover:text-blue-300">Read story <ExternalLink className="h-3.5 w-3.5" /></a>}</article>;
 }
 
 export { MarketIntelligence };

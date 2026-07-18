@@ -10,10 +10,11 @@ import { StockResearch } from "./components/StockResearch";
 import { PortfolioIntelligence } from "./components/PortfolioIntelligence";
 import { GoalPlanner } from "./components/GoalPlanner";
 import { ReportCenter } from "./components/ReportCenter";
-import { MarketIntelligence } from "./components/MarketIntelligence";
+import { MarketIntelligence
+ } from "./components/MarketIntelligence";
 import { SmartAlerts } from "./components/SmartAlerts";
 import { Login } from "./components/Login";
-import { supabase } from "./supabaseClient";
+import { isSupabaseConfigured, supabase } from "./supabaseClient";
 import ReportViewer from './components/reports/ReportViewer';
 import { Session, User } from '@supabase/supabase-js'; // 👈 ADD THIS IMPORT
 
@@ -28,6 +29,11 @@ function App() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
+    if (!isSupabaseConfigured || !supabase) {
+      setChecking(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setChecking(false);
@@ -130,6 +136,20 @@ function App() {
     return (
       <div className="min-h-screen w-full bg-[#040405] flex items-center justify-center text-[#71717a]">
         Loading…
+      </div>
+    );
+  }
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen w-full bg-[#040405] p-6 text-white flex items-center justify-center">
+        <div className="w-full max-w-xl rounded-3xl border border-blue-400/20 bg-[#121214] p-8 shadow-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">FinPilot AI setup</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Add your Supabase settings to continue.</h1>
+          <p className="mt-3 leading-6 text-[#a1a1aa]">The app is running, but authentication needs a local <code className="rounded bg-white/5 px-1.5 py-0.5 text-blue-200">.env</code> file before it can load your workspace.</p>
+          <pre className="mt-6 overflow-x-auto rounded-2xl border border-[#27272a] bg-[#09090b] p-4 text-sm leading-7 text-[#d4d4d8]">VITE_SUPABASE_URL="https://your-project.supabase.co"{`\n`}VITE_SUPABASE_ANON_KEY="your-anon-key"{`\n`}VITE_FINNHUB_API_KEY="your-finnhub-key"</pre>
+          <p className="mt-5 text-sm text-[#71717a]">Save those values in <code>.env</code>, then restart the dev server.</p>
+        </div>
       </div>
     );
   }

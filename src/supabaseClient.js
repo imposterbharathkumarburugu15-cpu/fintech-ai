@@ -10,12 +10,7 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Fail loudly if the .env vars are missing, instead of a cryptic error later.
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error(
-    'Missing Supabase env vars. Check your .env has VITE_SUPABASE_URL and ' +
-    'VITE_SUPABASE_ANON_KEY, and RESTART the dev server after editing .env.'
-  )
-}
-
-export const supabase = createClient(supabaseUrl, supabaseKey)
+// Keep the app renderable when a new developer has not created a local .env
+// file yet. App.tsx displays a clear setup screen instead of a blank page.
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseKey)
+export const supabase = isSupabaseConfigured ? createClient(supabaseUrl, supabaseKey) : null
