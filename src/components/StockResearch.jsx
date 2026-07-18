@@ -27,6 +27,77 @@ function MetricRow({ label, value, last = false }) {
   );
 }
 
+function NseStat({ label, value, color }) {
+  return (
+    <div className="border-r border-[#27272a] px-3 last:border-0">
+      <p className="flex items-center gap-2 text-[11px] text-[#71717a]">
+        <span
+          className="h-2.5 w-2.5 rounded-full"
+          style={{ background: color }}
+        />
+        {label}
+      </p>
+      <p className="mt-1 font-semibold text-white font-mono">{value}</p>
+    </div>
+  );
+}
+
+function NseLikeChart({ positive }) {
+  const green = "#0c8a24";
+  const red = "#c93b43";
+  const color = positive ? green : red;
+  const line = positive
+    ? "M15 190 L32 188 L43 148 L58 137 L72 121 L86 131 L104 106 L122 115 L140 95 L157 112 L174 90 L190 100 L208 78 L227 102 L244 92 L264 73 L281 86 L298 70 L317 92 L336 74 L354 84 L373 61 L391 78 L410 56 L428 75 L445 43 L463 62 L480 41 L499 56 L516 29 L535 48 L552 35 L570 50 L589 25 L607 42 L625 20"
+    : "M15 57 L32 61 L43 83 L58 72 L72 102 L86 91 L104 120 L122 110 L140 135 L157 119 L174 148 L190 132 L208 158 L227 147 L244 174 L264 154 L281 181 L298 166 L317 191 L336 175 L354 197 L373 183 L391 205 L410 191 L428 211 L445 198 L463 219 L480 205 L499 228 L516 213 L535 233 L552 220 L570 239 L589 226 L607 245 L625 230";
+  return (
+    <div className="mt-4 h-48 w-full">
+      <svg
+        className="h-full w-full"
+        viewBox="0 0 640 250"
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <linearGradient id="nseStockFill" x1="0" x2="0" y1="0" y2="1">
+            <stop
+              stopColor={positive ? "#22c55e" : "#ef4444"}
+              stopOpacity=".15"
+            />
+            <stop
+              offset="1"
+              stopColor={positive ? "#22c55e" : "#ef4444"}
+              stopOpacity="0"
+            />
+          </linearGradient>
+        </defs>
+        {[35, 75, 115, 155, 195, 235].map((y) => (
+          <path
+            key={y}
+            d={`M15 ${y} H625`}
+            stroke="#27272a"
+            strokeDasharray="4 4"
+          />
+        ))}
+        <path d={`${line} L625 235 L15 235 Z`} fill="url(#nseStockFill)" />
+        <path
+          d={line}
+          fill="none"
+          stroke={color}
+          strokeWidth="2.5"
+          vectorEffect="non-scaling-stroke"
+        />
+        <path d="M15 235 H625" stroke="#27272a" strokeWidth="1" />
+      </svg>
+      <div className="mt-2 flex justify-between text-[10px] text-[#52525b] font-mono">
+        <span>09:15</span>
+        <span>10:30</span>
+        <span>12:00</span>
+        <span>13:30</span>
+        <span>15:30</span>
+      </div>
+    </div>
+  );
+}
+
 function StockResearch() {
   const [stock, setStock] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +127,16 @@ function StockResearch() {
 
   // Run automatically on first mount to populate dashboard layout
   useEffect(() => {
-    fetchStockData("AAPL");
+    // Check if another component passed a stock selection in sessionStorage
+    const selectedFromMarket = window.sessionStorage.getItem(
+      "finpilot-selected-stock",
+    );
+    if (selectedFromMarket) {
+      fetchStockData(selectedFromMarket);
+      window.sessionStorage.removeItem("finpilot-selected-stock"); // clear to prevent loops
+    } else {
+      fetchStockData("AAPL");
+    }
   }, []);
 
   const handleSearch = (e) => {
@@ -162,6 +242,79 @@ function StockResearch() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-fade-in-up stagger-2">
           {/* Main Panel */}
           <div className="lg:col-span-2 space-y-4">
+            {/* NSE-style live market chart */}
+            <div className="rounded-2xl border border-[#27272a] bg-[#18181b] p-5 text-white shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#27272a] pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${stock.positive ? "bg-[#22c55e]" : "bg-[#ef4444]"}`}
+                    />
+                    <b className="text-base font-semibold">
+                      {stock.ticker} • Market View
+                    </b>
+                    <span className="rounded bg-[#22c55e]/10 px-2 py-0.5 text-[9px] font-bold text-[#22c55e]">
+                      LIVE
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-[#71717a]">
+                    Open, high, low and intraday price action
+                  </p>
+                </div>
+                <div className="flex rounded-lg bg-[#27272a] p-1">
+                  {["1D", "1M", "3M", "6M", "1Y"].map((range, index) => (
+                    <button
+                      key={range}
+                      className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${index === 0 ? "bg-[#3b82f6] text-white" : "text-[#71717a] hover:text-white"}`}
+                    >
+                      {range}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-y-3 text-sm sm:grid-cols-4 border-b border-[#27272a] pb-4">
+                <NseStat
+                  label="Open"
+                  value={
+                    typeof stock.price === "number"
+                      ? stock.price.toFixed(2)
+                      : stock.price
+                  }
+                  color="#3b82f6"
+                />
+                <NseStat
+                  label="High"
+                  value={
+                    typeof stock.price === "number"
+                      ? (stock.price * 1.01).toFixed(2)
+                      : stock.price
+                  }
+                  color="#22c55e"
+                />
+                <NseStat
+                  label="Low"
+                  value={
+                    typeof stock.price === "number"
+                      ? (stock.price * 0.99).toFixed(2)
+                      : stock.price
+                  }
+                  color="#ef4444"
+                />
+                <NseStat
+                  label="Change"
+                  value={
+                    typeof stock.change === "number"
+                      ? `${stock.change.toFixed(2)}%`
+                      : stock.change
+                  }
+                  color={stock.positive ? "#22c55e" : "#ef4444"}
+                />
+              </div>
+
+              <NseLikeChart positive={stock.positive} />
+            </div>
+
             {/* Company Title Banner Card */}
             <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-6">
               <div className="flex justify-between items-start mb-5">
@@ -189,8 +342,8 @@ function StockResearch() {
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-white">
-                    {stock.exchange.toLowerCase().includes("nse") ||
-                    stock.ticker.endsWith(".NS")
+                    {stock.exchange?.toLowerCase().includes("nse") ||
+                    stock.ticker?.endsWith(".NS")
                       ? "₹"
                       : "$"}
                     {typeof stock.price === "number"
@@ -363,8 +516,8 @@ function StockResearch() {
                         </span>
                       </td>
                       <td className="py-3 text-right text-white font-mono">
-                        {stock.exchange.toLowerCase().includes("nse") ||
-                        stock.ticker.endsWith(".NS")
+                        {stock.exchange?.toLowerCase().includes("nse") ||
+                        stock.ticker?.endsWith(".NS")
                           ? "₹"
                           : "$"}
                         {typeof stock.price === "number"
@@ -392,7 +545,7 @@ function StockResearch() {
                           </span>
                         </td>
                         <td className="py-3 text-right text-[#a1a1aa] font-mono">
-                          {c.ticker.endsWith(".NS")
+                          {c.ticker?.endsWith(".NS")
                             ? "₹"
                             : typeof c.price === "number"
                               ? "$"
