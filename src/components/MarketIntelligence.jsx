@@ -105,7 +105,11 @@ export function MarketIntelligence({ onOpenStock }) {
       </section>
 
       <section key={market} className="market-enter mt-7">
-        <div className="mb-4 flex items-end justify-between"><div><h2 className="text-lg font-semibold tracking-tight">{market === "watchlist" ? "Your watchlist" : data.title}</h2><p className="mt-1 text-xs text-zinc-500">{market === "watchlist" ? "Your highest-conviction instruments, all in one place." : data.subtitle}</p></div><button className="hidden items-center gap-1 text-xs font-medium text-violet-300 hover:text-white sm:flex">Explore markets <ChevronRight size={15}/></button></div>
+        <div className="mb-4 flex items-end justify-between"><div><h2 className="text-lg font-semibold tracking-tight">{market === "watchlist" ? "Your watchlist" : data.title}</h2><p className="mt-1 text-xs text-zinc-500">{market === "watchlist" ? "Your highest-conviction instruments, all in one place." : data.subtitle}</p></div><button
+  onClick={() => window.open("https://www.nseindia.com/", "_blank", "noopener,noreferrer")}
+  className="hidden items-center gap-1 text-xs font-medium text-violet-300 transition-colors hover:text-white sm:flex">  Explore More Markets
+  <ChevronRight size={15} />
+</button></div>
         {market !== "watchlist" && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">{indices.map((item, i) => <IndexCard key={item[0]} item={item} index={i}/>)}</div>}
         {market === "watchlist" && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{watchStocks.map(stock => <WatchCard key={stock[0]} stock={stock} pinned={pinned.includes(stock[0])} toggle={() => setPinned(p => p.includes(stock[0]) ? p.filter(x => x !== stock[0]) : [...p, stock[0]])} onOpenStock={onOpenStock}/>)}</div>}
       </section>
