@@ -20,10 +20,7 @@ app.use(cors({
 app.options("*", cors());
 
 app.use(express.json());
-<<<<<<< HEAD
-=======
 const PORT = Number(process.env.PORT) || 3000;
->>>>>>> origin/main
 
 // Initialize Groq Client (using the OpenAI SDK wrapper)
 const groq = new OpenAI({
