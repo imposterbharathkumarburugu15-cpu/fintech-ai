@@ -3,7 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import OpenAI from "openai";
-import { YahooFinance } from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
 import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
@@ -74,7 +74,11 @@ Professional, trustworthy, and educational. Never condescending. Treat the user 
 function getDemoResponse(userMessage: string): string {
   const query = userMessage.trim().toLowerCase();
 
-  if (query.includes("spend") || query.includes("expense") || query.includes("category")) {
+  if (
+    query.includes("spend") ||
+    query.includes("expense") ||
+    query.includes("category")
+  ) {
     return `### 📊 Expense & Spending Analysis
 
 Based on your transaction data, you have spent a total of **$4,250** so far this month, which is **12% lower** than this time last month! Great job optimizing your budget!
@@ -95,7 +99,12 @@ Based on your transaction data, you have spent a total of **$4,250** so far this
 What would you like to explore next? Click an option below or type a custom question!`;
   }
 
-  if (query.includes("nvidia") || query.includes("nvda") || query.includes("stock") || query.includes("market")) {
+  if (
+    query.includes("nvidia") ||
+    query.includes("nvda") ||
+    query.includes("stock") ||
+    query.includes("market")
+  ) {
     return `### 📈 Stock Intelligence & NVIDIA (NVDA) Report
 
 **NVIDIA Corporation (NASDAQ: NVDA)** continues to demonstrate incredible financial strength, driven primarily by the sustained global demand for enterprise artificial intelligence chipsets and advanced GPU architectures.
@@ -121,7 +130,11 @@ What would you like to explore next? Click an option below or type a custom ques
 Would you like me to analyze technical indicators or look at other tech stocks?`;
   }
 
-  if (query.includes("portfolio") || query.includes("asset") || query.includes("allocation")) {
+  if (
+    query.includes("portfolio") ||
+    query.includes("asset") ||
+    query.includes("allocation")
+  ) {
     return `### 💼 Portfolio Intelligence & Risk Assessment
 
 Your aggregate investment portfolio is valued at **$185,000**, split across major asset classes to balance wealth generation and capital preservation.
@@ -148,7 +161,11 @@ Your aggregate investment portfolio is valued at **$185,000**, split across majo
 Select an option below to simulate rebalancing, review cash allocations, or analyze stock research!`;
   }
 
-  if (query.includes("budget") || query.includes("build") || query.includes("income")) {
+  if (
+    query.includes("budget") ||
+    query.includes("build") ||
+    query.includes("income")
+  ) {
     return `### 🪙 Custom Budget Builder & Savings Planner
 
 Let's organize your finances using the popular **50/30/20 Budgeting Rule**. Based on a monthly net income of **$8,000**, here is your optimized financial framework:
@@ -173,7 +190,14 @@ Let's organize your finances using the popular **50/30/20 Budgeting Rule**. Base
 Click an option below or ask me how to pay down debt or adjust this plan for your specific income!`;
   }
 
-  if (query.includes("tax") || query.includes("80c") || query.includes("indian") || query.includes("ppf") || query.includes("elss") || query.includes("sip")) {
+  if (
+    query.includes("tax") ||
+    query.includes("80c") ||
+    query.includes("indian") ||
+    query.includes("ppf") ||
+    query.includes("elss") ||
+    query.includes("sip")
+  ) {
     return `### 🇮🇳 Indian Tax Saving & Mutual Fund Guide (FY 2026-27)
 
 Under the Indian Income Tax Act, Section 80C offers substantial tax-saving avenues of up to **₹1,50,000 per annum**. Let's review options to optimize your tax liabilities.
@@ -219,7 +243,12 @@ Here are some popular, deep-dive financial topics and reports I can generate ins
 // ===============================
 app.post("/api/chat", async (req, res) => {
   try {
-    const { messages, mode = "demo", ollamaHost = "http://127.0.0.1:11434", ollamaModel = "llama3" } = req.body;
+    const {
+      messages,
+      mode = "demo",
+      ollamaHost = "http://127.0.0.1:11434",
+      ollamaModel = "llama3",
+    } = req.body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "Messages array is required." });
@@ -244,21 +273,27 @@ app.post("/api/chat", async (req, res) => {
             model: ollamaModel,
             messages: messages.map((m: any) => ({
               role: m.role === "assistant" ? "assistant" : "user",
-              content: m.content
+              content: m.content,
             })),
             stream: false,
           }),
         });
 
         if (!ollamaResponse.ok) {
-          throw new Error(`Ollama responded with status: ${ollamaResponse.status}`);
+          throw new Error(
+            `Ollama responded with status: ${ollamaResponse.status}`,
+          );
         }
 
-        const data = await ollamaResponse.json() as any;
-        const text = data?.message?.content || "No response received from Ollama.";
+        const data = (await ollamaResponse.json()) as any;
+        const text =
+          data?.message?.content || "No response received from Ollama.";
         return res.json({ text });
       } catch (ollamaErr: any) {
-        console.warn("Ollama connection failed, falling back silently:", ollamaErr.message);
+        console.warn(
+          "Ollama connection failed, falling back silently:",
+          ollamaErr.message,
+        );
         const demoText = getDemoResponse(userMessage);
         return res.json({ text: demoText });
       }
@@ -275,18 +310,28 @@ app.post("/api/chat", async (req, res) => {
         max_tokens: 1500,
         temperature: 0.7,
       });
-      const text = response.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
+      const text =
+        response.choices[0]?.message?.content ||
+        "I couldn't generate a response. Please try again.";
       return res.json({ text });
     }
 
     // 4. GEMINI MODE
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "PLACEHOLDER") {
+    if (
+      !process.env.GEMINI_API_KEY ||
+      process.env.GEMINI_API_KEY === "PLACEHOLDER"
+    ) {
       const demoText = getDemoResponse(userMessage);
       return res.json({ text: demoText });
     }
 
-    const systemMessages = messages.filter((m: any) => m.role === "system").map((m: any) => m.content).join("\n\n");
-    const combinedSystemPrompt = systemMessages ? `${SYSTEM_PROMPT}\n\n${systemMessages}` : SYSTEM_PROMPT;
+    const systemMessages = messages
+      .filter((m: any) => m.role === "system")
+      .map((m: any) => m.content)
+      .join("\n\n");
+    const combinedSystemPrompt = systemMessages
+      ? `${SYSTEM_PROMPT}\n\n${systemMessages}`
+      : SYSTEM_PROMPT;
 
     const formattedMessages = messages
       .filter((m: any) => m.role !== "system")
@@ -317,7 +362,8 @@ app.post("/api/chat", async (req, res) => {
         });
       }
 
-      const text = response.text || "I couldn't generate a response. Please try again.";
+      const text =
+        response.text || "I couldn't generate a response. Please try again.";
       return res.json({ text });
     } catch (geminiError: any) {
       const demoText = getDemoResponse(userMessage);
@@ -325,7 +371,9 @@ app.post("/api/chat", async (req, res) => {
     }
   } catch (error: any) {
     console.error("Express /api/chat Error:", error);
-    return res.status(500).json({ error: error?.message || "Internal Server Error" });
+    return res
+      .status(500)
+      .json({ error: error?.message || "Internal Server Error" });
   }
 });
 
@@ -334,7 +382,12 @@ app.post("/api/chat", async (req, res) => {
 // ===============================
 app.post("/api/chat/stream", async (req, res) => {
   try {
-    const { messages, mode = "demo", ollamaHost = "http://127.0.0.1:11434", ollamaModel = "llama3" } = req.body;
+    const {
+      messages,
+      mode = "demo",
+      ollamaHost = "http://127.0.0.1:11434",
+      ollamaModel = "llama3",
+    } = req.body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: "Messages array is required." });
@@ -373,14 +426,16 @@ app.post("/api/chat/stream", async (req, res) => {
             model: ollamaModel,
             messages: messages.map((m: any) => ({
               role: m.role === "assistant" ? "assistant" : "user",
-              content: m.content
+              content: m.content,
             })),
             stream: true,
           }),
         });
 
         if (!ollamaResponse.ok) {
-          throw new Error(`Ollama responded with status: ${ollamaResponse.status}`);
+          throw new Error(
+            `Ollama responded with status: ${ollamaResponse.status}`,
+          );
         }
 
         const reader = ollamaResponse.body;
@@ -411,7 +466,10 @@ app.post("/api/chat/stream", async (req, res) => {
         res.end();
         return;
       } catch (ollamaErr: any) {
-        console.warn("Ollama stream failed, falling back silently:", ollamaErr.message);
+        console.warn(
+          "Ollama stream failed, falling back silently:",
+          ollamaErr.message,
+        );
         const demoText = getDemoResponse(userMessage);
         const words = demoText.split(/(?=\s)/);
         for (const word of words) {
@@ -427,7 +485,9 @@ app.post("/api/chat/stream", async (req, res) => {
     // 3. GROQ MODE STREAMING
     if (mode === "groq") {
       if (!process.env.GROQ_API_KEY) {
-        res.write(`data: ${JSON.stringify({ error: "GROQ_API_KEY is missing." })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({ error: "GROQ_API_KEY is missing." })}\n\n`,
+        );
         res.end();
         return;
       }
@@ -450,7 +510,10 @@ app.post("/api/chat/stream", async (req, res) => {
     }
 
     // 4. GEMINI MODE STREAMING
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "PLACEHOLDER") {
+    if (
+      !process.env.GEMINI_API_KEY ||
+      process.env.GEMINI_API_KEY === "PLACEHOLDER"
+    ) {
       const demoText = getDemoResponse(userMessage);
       const words = demoText.split(/(?=\s)/);
       for (const word of words) {
@@ -462,8 +525,13 @@ app.post("/api/chat/stream", async (req, res) => {
       return;
     }
 
-    const systemMessages = messages.filter((m: any) => m.role === "system").map((m: any) => m.content).join("\n\n");
-    const combinedSystemPrompt = systemMessages ? `${SYSTEM_PROMPT}\n\n${systemMessages}` : SYSTEM_PROMPT;
+    const systemMessages = messages
+      .filter((m: any) => m.role === "system")
+      .map((m: any) => m.content)
+      .join("\n\n");
+    const combinedSystemPrompt = systemMessages
+      ? `${SYSTEM_PROMPT}\n\n${systemMessages}`
+      : SYSTEM_PROMPT;
 
     const formattedMessages = messages
       .filter((m: any) => m.role !== "system")
@@ -542,7 +610,10 @@ app.get("/api/stock/:ticker", async (req, res) => {
     const cleanNews = (searchResults.news || []).slice(0, 3).map((n: any) => {
       let displayTime = "Recent";
       if (n.providerPublishTime) {
-        const timestamp = n.providerPublishTime < 1e11 ? n.providerPublishTime * 1000 : n.providerPublishTime;
+        const timestamp =
+          n.providerPublishTime < 1e11
+            ? n.providerPublishTime * 1000
+            : n.providerPublishTime;
         const diffMs = Date.now() - timestamp;
         const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 
@@ -563,13 +634,19 @@ app.get("/api/stock/:ticker", async (req, res) => {
       price: quote.regularMarketPrice || 0,
       change: quote.regularMarketChangePercent || 0,
       positive: (quote.regularMarketChangePercent || 0) >= 0,
-      marketCap: quote.marketCap ? `${(quote.marketCap / 1e9).toFixed(2)}B` : "N/A",
+      marketCap: quote.marketCap
+        ? `${(quote.marketCap / 1e9).toFixed(2)}B`
+        : "N/A",
       pe: quote.trailingPE ? quote.trailingPE.toFixed(2) : "N/A",
-      divYield: quote.dividendYield ? `${(quote.dividendYield * 100).toFixed(2)}%` : "0.00%",
+      divYield: quote.dividendYield
+        ? `${(quote.dividendYield * 100).toFixed(2)}%`
+        : "0.00%",
       eps: quote.trailingEps ? quote.trailingEps.toFixed(2) : "N/A",
       beta: quote.beta ? quote.beta.toFixed(2) : "N/A",
-      revenue: quote.totalRevenue ? `${(quote.totalRevenue / 1e9).toFixed(2)}B` : "N/A",
-      week52: `${quote.fiftyTwoWeekLow \vert{}\vert{} 0} -${quote.fiftyTwoWeekHigh || 0}`,
+      revenue: quote.totalRevenue
+        ? `${(quote.totalRevenue / 1e9).toFixed(2)}B`
+        : "N/A",
+      week52: `${quote.fiftyTwoWeekLow || 0} -${quote.fiftyTwoWeekHigh || 0}`,
     };
 
     // 2. Draft the highly structured AI prompt providing only real facts
@@ -615,26 +692,33 @@ Recent News Context: ${JSON.stringify(cleanNews)}`;
     let rawContent = aiCompletion.choices[0].message.content || "{}";
 
     if (rawContent.startsWith("```")) {
-      rawContent = rawContent.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
+      rawContent = rawContent
+        .replace(/^```json\s*/i, "")
+        .replace(/```$/, "")
+        .trim();
     }
 
     const aiAnalysis = JSON.parse(rawContent);
 
     // 4. Concurrently fetch basic structural metrics for the 3 competitors suggested by AI
-    const enrichmentPromises = (aiAnalysis.competitors || []).map(async (comp: any) => {
-      try {
-        const compQuote = await yahooFinance.quote(comp.ticker);
-        return {
-          name: comp.name,
-          ticker: comp.ticker,
-          price: compQuote?.regularMarketPrice || "N/A",
-          pe: compQuote?.trailingPE ? compQuote.trailingPE.toFixed(1) : "N/A",
-          mktCap: compQuote?.marketCap ? `${(compQuote.marketCap / 1e9).toFixed(1)}B` : "N/A",
-        };
-      } catch {
-        return { ...comp, price: "N/A", pe: "N/A", mktCap: "N/A" };
-      }
-    });
+    const enrichmentPromises = (aiAnalysis.competitors || []).map(
+      async (comp: any) => {
+        try {
+          const compQuote = await yahooFinance.quote(comp.ticker);
+          return {
+            name: comp.name,
+            ticker: comp.ticker,
+            price: compQuote?.regularMarketPrice || "N/A",
+            pe: compQuote?.trailingPE ? compQuote.trailingPE.toFixed(1) : "N/A",
+            mktCap: compQuote?.marketCap
+              ? `${(compQuote.marketCap / 1e9).toFixed(1)}B`
+              : "N/A",
+          };
+        } catch {
+          return { ...comp, price: "N/A", pe: "N/A", mktCap: "N/A" };
+        }
+      },
+    );
 
     const enrichedCompetitors = await Promise.all(enrichmentPromises);
 
@@ -646,7 +730,12 @@ Recent News Context: ${JSON.stringify(cleanNews)}`;
       summary: aiAnalysis.summary || "Analysis unavailable.",
       bull: aiAnalysis.bull || [],
       bear: aiAnalysis.bear || [],
-      swot: aiAnalysis.swot || { strengths: [], weaknesses: [], opportunities: [], threats: [] },
+      swot: aiAnalysis.swot || {
+        strengths: [],
+        weaknesses: [],
+        opportunities: [],
+        threats: [],
+      },
       competitors: enrichedCompetitors,
       news: cleanNews,
     };
@@ -654,7 +743,10 @@ Recent News Context: ${JSON.stringify(cleanNews)}`;
     res.json(finalPayload);
   } catch (error: any) {
     console.error("Stock Pipeline Failure:", error);
-    res.status(500).json({ error: error?.message || "Failed processing financial intelligence asset." });
+    res.status(500).json({
+      error:
+        error?.message || "Failed processing financial intelligence asset.",
+    });
   }
 });
 

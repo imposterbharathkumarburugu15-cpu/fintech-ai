@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "set OPENAI_API_KEY=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 &&tsx server.ts",
+    "dev": "tsx server.ts",
     "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
@@ -24,6 +24,7 @@
     "jspdf": "^4.2.1",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
+    "openai": "^6.48.0",
     "papaparse": "^5.5.4",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
