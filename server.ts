@@ -23,10 +23,6 @@ app.options("*", cors());
 app.use(express.json());
 const PORT = Number(process.env.PORT) || 3000;
 
-app.use(express.json());
-
-const yahooFinance = new YahooFinance();
-
 // Initialize Groq Client (using the OpenAI SDK wrapper)
 const groq = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
