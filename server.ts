@@ -3,7 +3,7 @@ import path from "path";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import OpenAI from "openai";
-import yahooFinance from "yahoo-finance2";
+import YahooFinance from "yahoo-finance2";
 import { GoogleGenAI } from "@google/genai";
 import cors from "cors";
 dotenv.config();
