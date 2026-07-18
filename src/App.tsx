@@ -128,7 +128,10 @@ function App() {
           setActiveView("stocks");
         }} />;
       case "alerts":
-        return <SmartAlerts />;
+        return <SmartAlerts onViewChange={handleViewChange} onOpenStock={(symbol: string) => {
+          window.sessionStorage.setItem("finpilot-selected-stock", symbol);
+          setActiveView("stocks");
+        }} />;
       default:
         return <Dashboard onViewChange={setActiveView} onToggleChat={() => setIsChatOpen(true)} />;
     }
