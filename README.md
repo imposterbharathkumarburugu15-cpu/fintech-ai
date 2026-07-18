@@ -1,4 +1,4 @@
-## How We Used Codex
+## How We Used Codex.
 
 What this project is about
 

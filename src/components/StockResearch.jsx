@@ -103,14 +103,22 @@ function StockResearch() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [inputVal, setInputVal] = useState("");
+  const API_URL = import.meta.env.VITE_API_URL; 
 
   const fetchStockData = async (tickerSymbol) => {
     setLoading(true);
     setError(null);
     try {
+<<<<<<< HEAD
       const response = await fetch(`/api/stock/${tickerSymbol}`);
 
       // Extract the server payload first to see what it sent us
+=======
+     const response = await fetch(   `${API_URL}/api/stock/${encodeURIComponent(tickerSymbol)}` );;
+      if (!response.ok) {
+        throw new Error("Ticker symbol not found or network threshold failed.");
+      }
+>>>>>>> origin/main
       const data = await response.json();
 
       if (!response.ok) {
