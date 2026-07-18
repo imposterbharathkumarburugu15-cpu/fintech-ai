@@ -5,10 +5,22 @@ import { createServer as createViteServer } from "vite";
 import OpenAI from "openai";
 import YahooFinance from "yahoo-finance2";
 import { GoogleGenAI } from "@google/genai";
-
+import cors from "cors";
 dotenv.config();
 
 const app = express();
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://fintech-ai-wine.vercel.app",
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+}));
+
+app.options("*", cors());
+
+app.use(express.json());
 const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
