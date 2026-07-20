@@ -1,73 +1,43 @@
-## How We Used Codex.
+## How We Used Codex
 
-What this project is about
+1.FinTech AI was built with OpenAI Codex as an engineering assistant throughout the development process. Rather than using it only to generate code, we used it to speed up development, validate ideas, and solve implementation challenges while making all product and technical decisions ourselves.
 
-Throughout the development of **FinPilot AI**, we used **OpenAI Codex** as our AI engineering partner. Instead of using it only for code generation, we collaborated with Codex across every stage of development while reviewing, testing, and refining all generated code before integrating it into the project.
+2.During the initial stages, Codex helped us plan the overall architecture of the application. It assisted in organizing the React frontend, Express backend, Supabase database, and API integrations into a clean and maintainable project structure.
 
-### System Design
+3.As development progressed, Codex accelerated the implementation of reusable React components, TypeScript interfaces, API integrations, dashboard layouts, authentication flows, and backend endpoints. It also helped connect the frontend with Supabase and external financial data sources while improving code organization and maintainability.
 
-Codex helped us plan the overall architecture, design a scalable project structure, organize the frontend and backend, and define the API flow. This allowed us to build on a clean and maintainable foundation from the beginning.
+4.Codex was especially valuable during debugging. It helped identify TypeScript errors, resolve API integration issues, troubleshoot deployment problems on Vercel and Render, and suggest cleaner implementations for existing code. These suggestions reduced development time, but every change was reviewed, tested, and refined before becoming part of the final application.
 
-### Frontend Development
-
-Codex accelerated the development of reusable React components, responsive layouts, dashboards, forms, charts, and UI interactions. It also helped improve consistency, code quality, and the overall user experience.
-
-### Backend Development
-
-Codex assisted in creating FastAPI endpoints, handling file uploads, organizing API routes, integrating the database, and structuring the backend into modular components.
-
-### Debugging and Refactoring
-
-Whenever we encountered issues, Codex helped identify potential causes, explain errors, and suggest improvements. It also helped refactor repetitive code into reusable components, making the application easier to maintain.
-
-### Development Workflow
-
-Using Codex reduced the time spent on repetitive development tasks, allowing us to focus on building better features, improving the user experience, and integrating AI capabilities throughout the application.
-
-Every AI-generated contribution was reviewed, tested, and refined by our team before becoming part of the final product.
-
+5.Throughout the project, Codex allowed us to spend less time on repetitive coding tasks and more time improving the product, refining the user experience, and building meaningful AI-powered features.
 ---
-
 ## How We Used GPT-5.6
-
-**GPT-5.6 is the intelligence behind FinPilot AI.** It powers the application's core AI features and transforms financial data into useful, personalized insights.
-
-### Expense Intelligence
-
-When users upload their transaction history, GPT-5.6 analyzes spending patterns, categorizes expenses, identifies recurring payments, detects unusual spending, and generates personalized financial insights.
-
-### Stock Research
-
-GPT-5.6 explains companies in simple language by generating business summaries, highlighting strengths and risks, and making financial information easier to understand for everyday users.
-
-### AI Financial Copilot
-
-Users can ask natural language questions such as:
-
-- Can I afford this purchase?
-- Why did my spending increase this month?
-- Explain this company in simple terms.
-- How can I improve my financial health?
-
-GPT-5.6 provides context-aware responses based on the available financial information instead of generic answers.
-
-### AI Reports
-
-GPT-5.6 generates personalized financial reports that summarize spending behavior, highlight important insights, and recommend practical actions users can take to improve their financial well-being.
-
-Instead of simply displaying numbers and charts, GPT-5.6 helps users understand what their financial data means and what actions they can take next.
-
+GPT-5.6 powers the intelligence behind Nexus AI, the AI financial copilot integrated into FinTech AI.
+Instead of simply displaying financial information, GPT-5.6 helps users understand their data by generating personalized insights, explaining financial concepts, and answering natural language questions.
+Within the application, GPT-5.6 is used to:
+- Generate personalized financial insights.
+- Explain companies and stock information in simple language.
+- Answer finance-related questions through Nexus AI.
+- Generate AI-powered financial summaries and reports.
+- Help users understand spending patterns and make better financial decisions.
+The goal was to build an assistant that goes beyond dashboards by providing contextual, conversational guidance tailored to each user's financial data.
 ---
-
-## Why OpenAI?
-
-Our goal was to build more than a traditional finance dashboard.
-
-By combining **OpenAI Codex** with **GPT-5.6**, we accelerated development while creating an AI-first experience that is conversational, intelligent, and practical.
-
-- **Codex** helped us design, build, debug, and improve the application.
-- **GPT-5.6** transformed financial data into meaningful insights and natural conversations.
-
-Together, they enabled us to build **FinPilot AI**, an intelligent financial copilot that helps users understand, manage, and improve their financial decisions.
-
-**Codex helped us build FinPilot AI. GPT-5.6 made it intelligent.**
+## Why OpenAI
+Our objective was to build an AI-first financial platform rather than a traditional finance dashboard.
+OpenAI Codex accelerated the engineering process by assisting with architecture, implementation, debugging, and code quality throughout development. GPT-5.6 powers the intelligence behind Nexus AI, enabling conversational financial assistance, personalized insights, and AI-generated reports.
+Together, Codex and GPT-5.6 enabled us to build FinTech AI faster while allowing the team to focus on product design, engineering decisions, and creating a practical financial assistant for everyday users.
+## APIs and Services Used
+### OpenAI GPT-5.6 API
+Used to power Nexus AI, the application's AI financial copilot. GPT-5.6 generates personalized financial insights, explains stocks and financial concepts, answers user questions, and creates AI-generated financial reports.
+**Reason:** To provide intelligent, conversational financial assistance instead of static dashboards and charts.
+### Finnhub API
+Used to retrieve real-time financial market data, including stock prices, company information, market trends, and other investment-related data.
+**Reason:** To provide accurate and up-to-date financial information for stock research and market analysis.
+### Supabase
+Used as the backend platform for authentication, database management, and secure storage of user data.
+**Reason:** To provide a scalable backend with built-in authentication and real-time database capabilities without managing separate infrastructure.
+### Vercel
+Used to deploy and host the React frontend.
+**Reason:** Fast deployment, automatic CI/CD from GitHub, and optimized performance for frontend applications.
+### Render
+Used to deploy and host the Express.js backend.
+**Reason:** Reliable cloud hosting for REST APIs with simple deployment and environment variable management.
