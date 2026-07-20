@@ -939,11 +939,11 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           </p>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
           <button 
             onClick={() => handleExport('pdf')}
             disabled={isExporting}
-            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+            className={`flex-1 md:flex-none justify-center px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               isExporting 
                 ? 'bg-gray-600 cursor-not-allowed' 
                 : 'bg-blue-600 hover:bg-blue-700'
@@ -953,7 +953,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           </button>
           <button 
             onClick={() => handleExport('excel')}
-            className="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
+            className="flex-1 md:flex-none justify-center px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
           >
             Export Excel
           </button>

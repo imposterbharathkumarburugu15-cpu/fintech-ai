@@ -48,7 +48,7 @@ function AddExpenseModal({ isOpen, onClose, onSaved }) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -58,7 +58,7 @@ function AddExpenseModal({ isOpen, onClose, onSaved }) {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-md bg-[#09090b] border border-[#27272a] rounded-2xl shadow-2xl p-6"
+            className="relative w-full max-w-md max-h-[calc(100dvh-1.5rem)] overflow-y-auto bg-[#09090b] border border-[#27272a] rounded-2xl shadow-2xl p-4 sm:p-6"
           >
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-semibold text-white">Add Transaction</h2>

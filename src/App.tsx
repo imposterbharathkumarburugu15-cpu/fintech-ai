@@ -71,11 +71,11 @@ function App() {
         return <GoalPlanner />;
       case "reports":
         return (
-          <div className="p-4 md:p-6">
-            <div className="flex flex-wrap gap-2 mb-4">
+          <div className="page-shell">
+            <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
               <button
                 onClick={() => setSelectedReportType("monthly")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition ${
                   selectedReportType === "monthly"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
@@ -85,7 +85,7 @@ function App() {
               </button>
               <button
                 onClick={() => setSelectedReportType("expense")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition ${
                   selectedReportType === "expense"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
@@ -95,7 +95,7 @@ function App() {
               </button>
               <button
                 onClick={() => setSelectedReportType("investment")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition ${
                   selectedReportType === "investment"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
@@ -105,7 +105,7 @@ function App() {
               </button>
               <button
                 onClick={() => setSelectedReportType("health")}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition ${
                   selectedReportType === "health"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"

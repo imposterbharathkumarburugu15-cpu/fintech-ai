@@ -29,12 +29,12 @@ const portfolioAllocation = [
 
 export function Dashboard({ onViewChange, onToggleChat }) {
   return (
-    <div className="max-w-[1400px] mx-auto px-6 py-8 pb-32">
+    <div className="max-w-[1400px] mx-auto page-shell">
       
       {/* Hero Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between mb-8">
+      <div className="page-header flex flex-col md:flex-row md:items-end justify-between mb-8">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
+          <h1 className="page-title text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
             Good Morning, Maya <span className="text-amber-400 text-2xl">🌅</span>
           </h1>
           <p className="text-[#a1a1aa] text-sm mt-1">Here's your financial operating picture for today.</p>
@@ -58,13 +58,13 @@ export function Dashboard({ onViewChange, onToggleChat }) {
         <div className="lg:col-span-8 flex flex-col gap-6">
           
           {/* Ask Nexus AI Block */}
-          <div className="bg-[#121214] border border-white/5 rounded-3xl p-6 shadow-xl">
+          <div className="bg-[#121214] border border-white/5 rounded-3xl p-4 sm:p-6 shadow-xl">
             <h2 className="text-white text-[16px] font-semibold mb-4">How can Nexus AI help you today?</h2>
             
             {/* Unified Input Field */}
             <div 
               onClick={onToggleChat}
-              className="relative flex items-center bg-[#18181b] border border-white/5 hover:border-white/10 rounded-2xl p-2 pl-4 cursor-text transition-all duration-300 group h-[56px] mb-4"
+              className="relative flex items-center bg-[#18181b] border border-white/5 hover:border-white/10 rounded-2xl p-2 pl-3 sm:pl-4 cursor-text transition-all duration-300 group min-h-[56px] mb-4"
             >
               <Search className="w-5 h-5 text-[#52525b] group-hover:text-[#a1a1aa] mr-3 shrink-0 transition-colors" />
               <span className="text-[#52525b] group-hover:text-[#a1a1aa] text-[14px] flex-1 text-left transition-colors">
@@ -78,7 +78,7 @@ export function Dashboard({ onViewChange, onToggleChat }) {
                   className="flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-600 hover:to-blue-600 text-white text-[12px] font-bold px-4 py-2 rounded-xl transition-all shadow-[0_0_12px_rgba(99,102,241,0.2)] active:scale-95"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  Ask Nexus AI
+                  <span className="hidden sm:inline">Ask Nexus AI</span>
                 </button>
               </div>
             </div>

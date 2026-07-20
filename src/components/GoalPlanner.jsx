@@ -33,12 +33,12 @@ function GoalPlanner() {
   };
 
   return (
-    <div className="max-w-[1080px] mx-auto flex flex-col h-full">
+    <div className="max-w-[1080px] mx-auto flex flex-col h-full page-shell">
       {/* Header */}
-      <div className="flex justify-between items-end mb-8 animate-fade-in-up">
+      <div className="page-header flex justify-between items-end mb-8 animate-fade-in-up">
         <div>
            <p className="text-[#3b82f6] text-[11px] font-bold tracking-[0.12em] mb-2 uppercase">Planning</p>
-          <h1 className="text-[38px] font-semibold text-white tracking-[-0.025em] mb-2 leading-none">Goal Planner</h1>
+          <h1 className="page-title text-[38px] font-semibold text-white tracking-[-0.025em] mb-2 leading-none">Goal Planner</h1>
           <p className="text-[#71717a] text-[15px]">Track savings targets and get AI-optimized action plans.</p>
         </div>
         <button onClick={() => setIsCreateModalOpen(true)} className="bg-[#3b82f6] hover:bg-[#2563eb] text-white px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-all flex items-center gap-2 shadow-[0_4px_12px_rgba(59,130,246,0.3)]">
@@ -118,7 +118,7 @@ function GoalPlanner() {
       {/* Modals */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-[#09090b] border border-[#27272a] rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-fade-in-up">
+          <div className="bg-[#09090b] border border-[#27272a] rounded-2xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto shadow-2xl animate-fade-in-up">
             <div className="p-6 border-b border-[#27272a] flex items-center justify-between">
               <h2 className="text-white font-bold text-lg">Create New Goal</h2>
               <button onClick={() => setIsCreateModalOpen(false)} className="p-1.5 text-[#71717a] hover:text-white hover:bg-[#18181b] rounded-lg transition-colors">
@@ -132,7 +132,7 @@ function GoalPlanner() {
                 <input required type="text" value={newGoal.name} onChange={(e) => setNewGoal({...newGoal, name: e.target.value})} placeholder="e.g. Vacation Fund" className="w-full bg-[#18181b] border border-[#27272a] rounded-xl px-4 py-3 text-[14px] text-white focus:outline-none focus:border-[#3b82f6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all" />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[13px] font-semibold text-[#e4e4e7] mb-1.5">Target Amount ($)</label>
                   <input required type="number" min="0" value={newGoal.target} onChange={(e) => setNewGoal({...newGoal, target: e.target.value})} placeholder="10000" className="w-full bg-[#18181b] border border-[#27272a] rounded-xl px-4 py-3 text-[14px] text-white focus:outline-none focus:border-[#3b82f6] transition-all" />
@@ -143,7 +143,7 @@ function GoalPlanner() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[13px] font-semibold text-[#e4e4e7] mb-1.5">Monthly Target ($)</label>
                   <input type="number" min="0" value={newGoal.monthlyTarget} onChange={(e) => setNewGoal({...newGoal, monthlyTarget: e.target.value})} placeholder="500" className="w-full bg-[#18181b] border border-[#27272a] rounded-xl px-4 py-3 text-[14px] text-white focus:outline-none focus:border-[#3b82f6] transition-all" />
