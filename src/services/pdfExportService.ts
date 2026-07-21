@@ -26,7 +26,7 @@ export async function exportReportToPDF(
       throw new Error('Report element not found');
     }
 
-    // Create a clean clone for PDF generation
+    // Create a clean clone with safe colors
     const container = document.createElement('div');
     container.style.position = 'fixed';
     container.style.left = '-9999px';
@@ -37,18 +37,21 @@ export async function exportReportToPDF(
     container.style.borderRadius = '16px';
     container.style.color = '#ffffff';
     container.style.fontFamily = 'Arial, sans-serif';
-    
+
     // Clone the element
     const clone = element.cloneNode(true) as HTMLElement;
     
-    // Clean colors
-    cleanElementColors(clone);
+    // ✅ FIX: Clean all oklch colors from the clone
+    removeAllOklchColors(clone);
+    
+    // ✅ FIX: Replace all Tailwind color classes with safe colors
+    replaceTailwindClasses(clone);
     
     container.appendChild(clone);
     document.body.appendChild(container);
 
     // Wait for rendering
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // Capture with html2canvas
     const canvas = await html2canvas(container, {
@@ -61,18 +64,23 @@ export async function exportReportToPDF(
       windowWidth: 1200,
       windowHeight: container.scrollHeight,
       onclone: (clonedDoc) => {
-        // Fix any remaining colors
+        // Final cleanup of any remaining oklch colors
         const elements = clonedDoc.querySelectorAll('*');
         elements.forEach((el: any) => {
           if (el.style) {
-            if (el.style.backgroundColor && el.style.backgroundColor.includes('oklch')) {
-              el.style.backgroundColor = '#1a1a2e';
-            }
-            if (el.style.color && el.style.color.includes('oklch')) {
-              el.style.color = '#ffffff';
-            }
+            // Replace any remaining oklch colors
+            ['backgroundColor', 'color', 'borderColor', 'fill', 'stroke', 'background'].forEach(prop => {
+              if (el.style[prop] && el.style[prop].includes('oklch')) {
+                el.style[prop] = prop === 'color' ? '#ffffff' : 
+                                 prop === 'backgroundColor' ? '#1a1a2e' :
+                                 prop === 'borderColor' ? '#374151' :
+                                 '#1a1a2e';
+              }
+            });
+            // Fix gradients
             if (el.style.backgroundImage && el.style.backgroundImage.includes('oklch')) {
               el.style.backgroundImage = 'none';
+              el.style.backgroundColor = '#1a1a2e';
             }
           }
         });
@@ -127,9 +135,10 @@ export async function exportReportToPDF(
   }
 }
 
-// ===== CLEAN COLORS FUNCTION =====
+// ===== REMOVE OKLCH COLORS =====
 
-function cleanElementColors(element: HTMLElement): void {
+function removeAllOklchColors(element: HTMLElement): void {
+  // Remove oklch from inline styles
   const allElements = element.querySelectorAll('*');
   allElements.forEach((el) => {
     const htmlEl = el as HTMLElement;
@@ -137,21 +146,21 @@ function cleanElementColors(element: HTMLElement): void {
     if (htmlEl.style) {
       const style = htmlEl.style;
       
-      if (style.backgroundColor && style.backgroundColor.includes('oklch')) {
-        style.backgroundColor = '#1a1a2e';
-      }
-      if (style.color && style.color.includes('oklch')) {
-        style.color = '#ffffff';
-      }
-      if (style.borderColor && style.borderColor.includes('oklch')) {
-        style.borderColor = '#374151';
-      }
-      if (style.fill && style.fill.includes('oklch')) {
-        style.fill = '#3B82F6';
-      }
-      if (style.stroke && style.stroke.includes('oklch')) {
-        style.stroke = '#3B82F6';
-      }
+      // Check all style properties for oklch
+      const props = ['backgroundColor', 'color', 'borderColor', 'fill', 'stroke', 'background', 'backgroundImage'];
+      props.forEach(prop => {
+        const value = (style as any)[prop];
+        if (value && value.includes('oklch')) {
+          (style as any)[prop] = prop === 'color' ? '#ffffff' : 
+                                 prop === 'backgroundColor' ? '#1a1a2e' :
+                                 prop === 'borderColor' ? '#374151' :
+                                 prop === 'fill' ? '#3B82F6' :
+                                 prop === 'stroke' ? '#3B82F6' :
+                                 '#1a1a2e';
+        }
+      });
+      
+      // Fix gradients
       if (style.backgroundImage && style.backgroundImage.includes('oklch')) {
         style.backgroundImage = 'none';
         style.backgroundColor = '#1a1a2e';
@@ -159,22 +168,54 @@ function cleanElementColors(element: HTMLElement): void {
       if (style.background && style.background.includes('oklch')) {
         style.background = '#1a1a2e';
       }
-      if (style.backgroundImage && style.backgroundImage.includes('gradient')) {
-        style.backgroundImage = 'none';
-        style.backgroundColor = '#1a1a2e';
+      
+      // Fix box-shadow
+      if (style.boxShadow && style.boxShadow.includes('oklch')) {
+        style.boxShadow = 'none';
       }
     }
-    
+  });
+}
+
+// ===== REPLACE TAILWIND CLASSES =====
+
+function replaceTailwindClasses(element: HTMLElement): void {
+  const allElements = element.querySelectorAll('*');
+  allElements.forEach((el) => {
+    const htmlEl = el as HTMLElement;
     const classNames = htmlEl.className || '';
+    
     if (typeof classNames === 'string') {
       let newClasses = classNames;
       
+      // Background colors
       newClasses = newClasses.replace(/bg-\w+-\d+\/\d+/g, 'bg-gray-800');
+      newClasses = newClasses.replace(/bg-gray-\d+\/\d+/g, 'bg-gray-800');
+      newClasses = newClasses.replace(/bg-gray-\d+/g, 'bg-gray-800');
+      newClasses = newClasses.replace(/bg-white\/\d+/g, '');
+      
+      // Gradients
       newClasses = newClasses.replace(/bg-gradient-to-[brltrb]+/g, '');
       newClasses = newClasses.replace(/from-\w+-\d+/g, '');
       newClasses = newClasses.replace(/to-\w+-\d+/g, '');
+      newClasses = newClasses.replace(/via-\w+-\d+/g, '');
+      
+      // Text colors
       newClasses = newClasses.replace(/text-\w+-\d+/g, 'text-gray-300');
+      newClasses = newClasses.replace(/text-\w+-\d+\/\d+/g, 'text-gray-300');
+      newClasses = newClasses.replace(/text-white/g, 'text-white');
+      
+      // Border colors
       newClasses = newClasses.replace(/border-\w+-\d+/g, 'border-gray-700');
+      newClasses = newClasses.replace(/border-\w+-\d+\/\d+/g, 'border-gray-700');
+      
+      // Ring colors
+      newClasses = newClasses.replace(/ring-\w+-\d+/g, '');
+      newClasses = newClasses.replace(/ring-\w+-\d+\/\d+/g, '');
+      
+      // Shadow
+      newClasses = newClasses.replace(/shadow-\w+/g, '');
+      newClasses = newClasses.replace(/shadow-\w+\/\d+/g, '');
       
       if (newClasses !== classNames) {
         htmlEl.className = newClasses;
