@@ -3,20 +3,23 @@
 import { supabase } from "../supabaseClient";
 import { ReportData } from "../types/report.types";
 
+
 export async function fetchReportData(userId?: string): Promise<ReportData> {
   try {
     // Get current user
     let user = null;
     let userIdToUse = userId;
 
+    // If no userId provided, try to get from Supabase
     if (!userIdToUse) {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       user = currentUser;
       userIdToUse = currentUser?.id;
     }
 
+    // If we still don't have a valid user ID, use mock data
     if (!userIdToUse) {
-      console.log('No user logged in - using mock data');
+      console.log('❌ No user logged in - using mock data');
       return getMockReportData();
     }
 
@@ -31,11 +34,9 @@ export async function fetchReportData(userId?: string): Promise<ReportData> {
 
     if (txError) {
       console.error('Error fetching transactions:', txError);
+      // If we have no transactions, return mock data
       return getMockReportData();
     }
-
-    console.log(`📊 Found ${transactions?.length || 0} transactions`);
-
     // ===== FETCH GOALS =====
     let goals: any[] = [];
     try {
