@@ -1,428 +1,313 @@
-import { useState } from "react";
-import { Search, TrendingUp, TrendingDown, Sparkles, BarChart2, ArrowUpRight, ArrowDownRight, Globe, ShieldAlert, Users } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { 
+  Search, TrendingUp, TrendingDown, Sparkles, BarChart2, ArrowUpRight, 
+  ArrowDownRight, Globe, ShieldAlert, Users, Zap, FileText, Scale, 
+  PieChart, Activity, Target, AlertTriangle, ChevronDown, Download, 
+  Plus, Layers, Compass, Cpu, Wallet, Briefcase
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
+  ResponsiveContainer, BarChart, Bar, Cell
+} from "recharts";
 
-// ─── Stock Database ─────────────────────────────────────────────
+// ─── MOCK DATA DATABASE ──────────────────────────────────────────
 const STOCKS = {
   AAPL: {
-    name: "Apple Inc.", ticker: "AAPL", exchange: "NASDAQ", sector: "Technology", industry: "Consumer Electronics",
-    price: "$214.32", change: "+1.24%", positive: true,
+    name: "Apple Inc.", ticker: "AAPL", exchange: "NASDAQ", sector: "Technology", 
+    price: "$214.32", change: "+1.24%", positive: true, intrinsicValue: "$245.00",
     marketCap: "$3.28T", pe: "32.4", divYield: "0.46%", eps: "$6.62", beta: "1.21",
-    revenue: "$391.2B", week52: "$164.08 – $220.20",
-    summary: "Apple designs, manufactures, and markets consumer electronics, software, and online services. With over 2 billion active devices worldwide, Apple's ecosystem generates massive recurring revenue through its Services segment — App Store, Apple Music, iCloud, and Apple TV+. The company is aggressively integrating Apple Intelligence across its product line.",
-    bull: ["Services revenue growing 14% YoY, expanding high-margin revenue base", "2+ billion active devices driving reliable hardware upgrade cycles", "AI integration (Apple Intelligence) could accelerate iPhone 16 upgrades", "Strong balance sheet with $162B in cash for buybacks and dividends"],
-    bear: ["Global regulatory pressure on App Store commissions (EU Digital Markets Act)", "iPhone saturation in mature markets limiting unit growth", "Premium valuation at 32x P/E with modest growth expectations", "Dependence on China manufacturing amid geopolitical tensions"],
+    score: 88, recommendation: "BUY", confidence: 94,
+    summary: "Apple is aggressively integrating Apple Intelligence across its product line, shifting from a hardware-centric model to an AI-integrated ecosystem. Services revenue continues to expand high-margin bases.",
+    bull: ["Services revenue growing 14% YoY", "AI integration driving upgrade cycles", "Strong $162B cash position"],
+    bear: ["EU regulatory pressure", "China market saturation", "Premium 32x P/E valuation"],
     swot: {
-      strengths: ["Dominant brand loyalty", "Integrated hardware-software ecosystem", "Record services revenue"],
-      weaknesses: ["iPhone revenue concentration risk", "Limited AI differentiation vs competitors", "High product prices exclude emerging markets"],
-      opportunities: ["India market expansion", "Vision Pro spatial computing", "Healthcare & fintech entry points"],
-      threats: ["Antitrust regulation globally", "Huawei comeback in China", "Slowing consumer spending"],
+      strengths: ["Brand Loyalty", "Ecosystem Lock-in"],
+      weaknesses: ["iPhone Concentration", "High Pricing"],
+      opportunities: ["India Expansion", "Vision Pro"],
+      threats: ["Antitrust Lawsuits", "Huawei Competition"],
     },
-    competitors: [
-      { name: "Samsung", ticker: "005930.KS", price: "₩78,200", pe: "15.2", mktCap: "$450B" },
-      { name: "Microsoft", ticker: "MSFT", price: "$420.10", pe: "35.1", mktCap: "$3.12T" },
-      { name: "Google", ticker: "GOOGL", price: "$185.40", pe: "24.5", mktCap: "$2.28T" },
-    ],
-    news: [
-      { headline: "Apple unveils Apple Intelligence features at WWDC 2026", time: "2 hours ago" },
-      { headline: "EU fines Apple €1.8B over App Store anti-competitive practices", time: "1 day ago" },
-      { headline: "Apple Vision Pro 2 reportedly entering production", time: "3 days ago" },
-    ],
+    metrics: [{ name: 'Rev', value: 391 }, { name: 'Net', value: 97 }, { name: 'R&D', value: 30 }, { name: 'Cap', value: 55 }],
+    news: [{ headline: "Apple Intelligence rollout nears", impact: "High", sentiment: "positive" }, { headline: "Supply chain shifts to Vietnam", impact: "Mid", sentiment: "neutral" }]
   },
   NVDA: {
-    name: "NVIDIA Corp.", ticker: "NVDA", exchange: "NASDAQ", sector: "Technology", industry: "Semiconductors",
-    price: "$875.40", change: "+2.34%", positive: true,
+    name: "NVIDIA Corp.", ticker: "NVDA", exchange: "NASDAQ", sector: "Semiconductors",
+    price: "$875.40", change: "+2.34%", positive: true, intrinsicValue: "$910.00",
     marketCap: "$2.16T", pe: "68.2", divYield: "0.03%", eps: "$12.84", beta: "1.72",
-    revenue: "$60.9B", week52: "$262.19 – $974.00",
-    summary: "NVIDIA is the world's leading GPU manufacturer and the backbone of the global AI infrastructure buildout. Its H100 and H200 GPUs power virtually all large-scale AI training — from OpenAI's GPT to Google's Gemini. Data center revenue has exploded from $15B (FY2023) to over $47B (FY2024), reflecting insatiable AI demand.",
-    bull: ["AI compute demand growing exponentially — NVIDIA holds 80%+ GPU market share", "Blackwell architecture launching — next-gen GPUs with 2.5x performance leap", "CUDA software moat makes switching costs extremely high for AI developers", "Expanding into automotive AI, healthcare, and robotics"],
-    bear: ["Extreme valuation at 68x earnings requires flawless execution", "AMD and Intel aggressively competing in AI chips", "China export restrictions cutting off major growth market", "Cyclical semiconductor risk if AI investment cycle slows"],
-    swot: {
-      strengths: ["Dominant AI chip market share", "CUDA developer ecosystem lock-in", "Visionary leadership under Jensen Huang"],
-      weaknesses: ["Single-product dependency (GPU)", "Highly cyclical semiconductor industry", "Very high valuation"],
-      opportunities: ["Sovereign AI data center buildouts globally", "Automotive autonomous driving chips", "AI in healthcare diagnostics"],
-      threats: ["US-China export controls", "Custom silicon from Big Tech (TPU, Trainium)", "AMD CDNA competitive pressure"],
-    },
-    competitors: [
-      { name: "AMD", ticker: "AMD", price: "$148.20", pe: "45.6", mktCap: "$240B" },
-      { name: "Intel", ticker: "INTC", price: "$28.40", pe: "N/A", mktCap: "$120B" },
-      { name: "Broadcom", ticker: "AVGO", price: "$1,680", pe: "38.2", mktCap: "$780B" },
-    ],
-    news: [
-      { headline: "NVIDIA reports Q1 FY2027 earnings — revenue beats estimates by 12%", time: "3 hours ago" },
-      { headline: "Jensen Huang hints at Blackwell Ultra launch timeline at GTC", time: "2 days ago" },
-      { headline: "NVIDIA stock added to Dow Jones Industrial Average", time: "5 days ago" },
-    ],
-  },
-  TSLA: {
-    name: "Tesla Inc.", ticker: "TSLA", exchange: "NASDAQ", sector: "Consumer Discretionary", industry: "Electric Vehicles",
-    price: "$248.10", change: "+3.10%", positive: true,
-    marketCap: "$789B", pe: "62.8", divYield: "—", eps: "$3.95", beta: "2.30",
-    revenue: "$97.7B", week52: "$138.80 – $271.00",
-    summary: "Tesla is the global EV leader with a vertically integrated model — manufacturing, software, energy, and autonomous driving all under one roof. FSD (Full Self-Driving) and the Optimus humanoid robot represent Elon Musk's vision for Tesla as an AI and robotics company, not just a car company.",
-    bull: ["FSD monetization potential could add $10K+ revenue per vehicle over lifetime", "Cybercab robotaxi launch could transform revenue model", "Energy storage (Megapack) growing rapidly as grid-scale battery demand surges", "Optimus robot could be a multi-trillion dollar opportunity"],
-    bear: ["EV market slowing as competition from China (BYD) intensifies globally", "Price wars compressing already thin margins", "Elon Musk distraction risk (X, SpaceX, DOGE)", "Robotaxi regulatory approval timeline highly uncertain"],
-    swot: {
-      strengths: ["Supercharger network moat", "FSD technology lead", "Vertical integration reducing costs"],
-      weaknesses: ["Musk key-man dependency risk", "Declining market share in China", "High valuation relative to auto peers"],
-      opportunities: ["Robotaxi network launch", "Energy storage expansion", "Emerging market EV growth"],
-      threats: ["BYD price competition in China & globally", "Legacy OEM EV catch-up", "Regulatory delays on autonomous driving"],
-    },
-    competitors: [
-      { name: "BYD", ticker: "1211.HK", price: "HK$238", pe: "18.4", mktCap: "$85B" },
-      { name: "Rivian", ticker: "RIVN", price: "$14.20", pe: "N/A", mktCap: "$13B" },
-      { name: "Lucid", ticker: "LCID", price: "$2.84", pe: "N/A", mktCap: "$7B" },
-    ],
-    news: [
-      { headline: "Tesla Model Y refresh deliveries begin in North America", time: "1 day ago" },
-      { headline: "Elon Musk confirms Cybercab production start date at Austin Gigafactory", time: "3 days ago" },
-      { headline: "Tesla Energy posts record Megapack deployments in Q1 2026", time: "4 days ago" },
-    ],
+    score: 96, recommendation: "STRONG BUY", confidence: 98,
+    summary: "The backbone of the global AI infrastructure. Blackwell architecture represents a generational leap in compute efficiency, securing a multi-year lead over rivals.",
+    bull: ["80%+ GPU Market Share", "CUDA Software Moat", "Data Center Hypergrowth"],
+    bear: ["Extreme Valuation", "Export Restrictions", "Cyclical Risk"],
+    swot: { strengths: ["Dominance", "Innovation"], weaknesses: ["Cyclicality", "Valuation"], opportunities: ["Sovereign AI", "Auto"], threats: ["Custom Silicon", "Geopolitics"] },
+    metrics: [{ name: 'Rev', value: 260 }, { name: 'Net', value: 130 }, { name: 'R&D', value: 40 }, { name: 'Cap', value: 28 }],
+    news: [{ headline: "Blackwell chip demand hits record", impact: "High", sentiment: "positive" }, { headline: "New H200 shipping global", impact: "High", sentiment: "positive" }]
   },
   RELIANCE: {
-    name: "Reliance Industries", ticker: "RELIANCE", exchange: "NSE / BSE", sector: "Conglomerate", industry: "Oil, Telecom, Retail",
-    price: "₹2,890", change: "+0.78%", positive: true,
+    name: "Reliance Industries", ticker: "RELIANCE", exchange: "NSE", sector: "Conglomerate",
+    price: "₹2,890", change: "+0.78%", positive: true, intrinsicValue: "₹3,180",
     marketCap: "₹19.6L Cr", pe: "28.4", divYield: "0.38%", eps: "₹101.8", beta: "0.82",
-    revenue: "₹10.1L Cr", week52: "₹2,220 – ₹3,217",
-    summary: "Reliance Industries is India's largest company by market cap and revenue. Under Mukesh Ambani, it transformed from a petrochemicals conglomerate into a digital-first tech and retail empire. Jio disrupted Indian telecom with 500M+ subscribers, while JioMart and Reliance Retail are reshaping India's $800B retail market. The company is now investing heavily in green energy (solar, hydrogen) and AI.",
-    bull: ["Jio subscriber growth and ARPU (average revenue per user) expansion ahead", "Reliance Retail targeting $100B revenue — fastest growing retail chain in Asia", "New Energy business (solar, hydrogen) positions for India's $500B green transition", "5G monetization in India still in early innings"],
-    bear: ["High capital expenditure requirements reducing free cash flow", "Telecom regulatory risk from TRAI pricing interventions", "Oil refining margins under pressure from energy transition", "Family succession dynamics could affect strategic clarity"],
-    swot: {
-      strengths: ["Unmatched conglomerate scale in India", "Jio's 500M subscriber base", "Political relationships and regulatory access"],
-      weaknesses: ["Complex corporate structure reduces transparency", "Heavy debt from 5G and retail expansion", "Refinery segment carbon transition risk"],
-      opportunities: ["India's consumer market growing at 7% GDP", "Digital financial services (JioPay, JioInsure)", "Green energy becoming core business"],
-      threats: ["Adani Group competition in infrastructure", "Foreign tech giants entering Indian market", "Global oil price volatility"],
-    },
-    competitors: [
-      { name: "TCS", ticker: "TCS.NS", price: "₹3,920", pe: "30.2", mktCap: "₹14.2L Cr" },
-      { name: "HDFC Bank", ticker: "HDFCBANK.NS", price: "₹1,780", pe: "18.4", mktCap: "₹13.5L Cr" },
-      { name: "Bharti Airtel", ticker: "BHARTIARTL.NS", price: "₹1,620", pe: "52.8", mktCap: "₹9.6L Cr" },
-    ],
-    news: [
-      { headline: "Reliance Jio announces 5G coverage in 1000 Indian cities", time: "1 day ago" },
-      { headline: "RIL Q4 results: Net profit up 7% YoY on strong retail and digital performance", time: "2 days ago" },
-      { headline: "Mukesh Ambani unveils $10B green energy investment roadmap", time: "1 week ago" },
-    ],
-  },
-  MSFT: {
-    name: "Microsoft Corp.", ticker: "MSFT", exchange: "NASDAQ", sector: "Technology", industry: "Cloud & Software",
-    price: "$420.10", change: "+0.89%", positive: true,
-    marketCap: "$3.12T", pe: "35.1", divYield: "0.72%", eps: "$11.96", beta: "0.90",
-    revenue: "$245.1B", week52: "$304.50 – $468.35",
-    summary: "Microsoft is a cloud and AI powerhouse. Azure (cloud infrastructure) and Copilot (AI assistant integration across Office 365, Teams, and Windows) form the dual engines of growth. The $69B Activision acquisition adds gaming revenues. Microsoft's partnership with OpenAI gives it exclusive commercial rights to GPT technology, embedding AI across every enterprise product.",
-    bull: ["Azure growing 28% YoY — second largest cloud behind AWS, gap narrowing", "Copilot AI adoption across 1B+ Office users at $30/user/month premium", "OpenAI partnership provides structural AI advantage vs competitors", "Gaming segment ($25B/yr post-Activision) adding diversification"],
-    bear: ["Premium valuation at 35x P/E limits upside if growth decelerates", "Antitrust scrutiny over OpenAI partnership and gaming consolidation", "Azure market share gains slowing vs Google Cloud acceleration", "Enterprise sales cycles slowing in high-interest-rate environment"],
-    swot: {
-      strengths: ["Enterprise software distribution moat", "Azure AI infrastructure advantage", "OpenAI exclusive commercial partnership"],
-      weaknesses: ["Slower consumer brand vs Apple/Google", "Teams losing to Slack/Zoom in some segments", "Windows PC market saturation"],
-      opportunities: ["AI Copilot monetization across 300M+ commercial users", "Security cloud expansion (Microsoft Defender)", "Healthcare AI solutions"],
-      threats: ["Google Workspace competitive pressure", "OpenAI independence risk", "EU antitrust investigations"],
-    },
-    competitors: [
-      { name: "Apple", ticker: "AAPL", price: "$214.32", pe: "32.4", mktCap: "$3.28T" },
-      { name: "Google", ticker: "GOOGL", price: "$185.40", pe: "24.5", mktCap: "$2.28T" },
-      { name: "Amazon", ticker: "AMZN", price: "$198.90", pe: "42.1", mktCap: "$2.10T" },
-    ],
-    news: [
-      { headline: "Microsoft Copilot reaches 50M daily active users in enterprise", time: "6 hours ago" },
-      { headline: "Azure AI services revenue doubles year-over-year in Q3", time: "2 days ago" },
-      { headline: "Microsoft announces next-gen Copilot+ PCs with neural processing units", time: "4 days ago" },
-    ],
+    score: 92, recommendation: "BUY", confidence: 96,
+    summary: "India's largest conglomerate transitioning from O2C to a digital and green energy powerhouse. Jio and Retail are the primary value unlock drivers for the next fiscal year.",
+    bull: ["Jio 5G Monetization", "Retail Scale", "Green Hydrogen Entry"],
+    bear: ["High CapEx", "O2C Volatility", "Regulatory Shifts"],
+    swot: { strengths: ["Scale", "Data Leadership"], weaknesses: ["Debt", "Complexity"], opportunities: ["New Energy", "Jio Financial"], threats: ["Adani Group", "Oil Prices"] },
+    metrics: [{ name: 'Rev', value: 810 }, { name: 'Net', value: 70 }, { name: 'R&D', value: 15 }, { name: 'Cap', value: 120 }],
+    news: [{ headline: "Green hydrogen plant phase 1 complete", impact: "High", sentiment: "positive" }, { headline: "Retail IPO rumors intensify", impact: "Mid", sentiment: "positive" }]
   },
 };
 
-const QUICK_SEARCHES = ["AAPL", "NVDA", "TSLA", "MSFT", "RELIANCE"];
+const CHART_DATA = [
+  { time: '09:15', price: 2840 }, { time: '10:30', price: 2865 },
+  { time: '11:45', price: 2850 }, { time: '13:00', price: 2890 },
+  { time: '14:15', price: 2875 }, { time: '15:30', price: 2910 },
+];
 
-function MetricRow({ label, value, last = false }) {
-  return (
-    <div className={`flex justify-between items-center py-3 ${!last ? "border-b border-[#27272a]" : ""}`}>
-      <span className="text-[#71717a] text-[13px]">{label}</span>
-      <span className="text-white font-semibold text-[13px] font-mono">{value}</span>
+const QUICK_CHIPS = ["RELIANCE", "TCS", "INFY", "AAPL", "NVDA", "TSLA", "MSFT"];
+
+// ─── REUSABLE UI COMPONENTS ──────────────────────────────────────
+
+const StatItem = ({ label, value, subValue, color = "text-white" }) => (
+  <div className="bg-white/5 border border-white/5 rounded-xl p-4">
+    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{label}</p>
+    <p className={`text-xl font-bold ${color}`}>{value}</p>
+    {subValue && <p className="text-[11px] text-slate-500 mt-0.5">{subValue}</p>}
+  </div>
+);
+
+const SectionHeader = ({ icon: Icon, title, badge }) => (
+  <div className="flex items-center justify-between mb-5">
+    <div className="flex items-center gap-2">
+      <div className="p-1.5 bg-blue-500/10 rounded-lg">
+        <Icon className="w-4 h-4 text-blue-500" />
+      </div>
+      <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">{title}</h3>
     </div>
-  );
-}
+    {badge && <span className="px-2 py-0.5 bg-white/5 rounded text-[10px] font-bold text-slate-500 border border-white/10 uppercase">{badge}</span>}
+  </div>
+);
 
-function NseStat({ label, value, color }) {
-  return <div className="border-r border-[#e4e6eb] px-3 last:border-0"><p className="flex items-center gap-2 text-[11px] text-[#737887]"><span className="h-2.5 w-2.5 rounded-full" style={{ background: color }}/>{label}</p><p className="mt-1 font-semibold" style={{ color: label === "Change" ? color : "#1f2430" }}>{value}</p></div>;
-}
+export function StockResearch() {
+  const [query, setQuery] = useState("RELIANCE");
+  const [search, setSearch] = useState("");
 
-function NseLikeChart({ positive }) {
-  const green = "#0c8a24";
-  const red = "#c93b43";
-  const color = positive ? green : red;
-  const line = positive
-    ? "M15 190 L32 188 L43 148 L58 137 L72 121 L86 131 L104 106 L122 115 L140 95 L157 112 L174 90 L190 100 L208 78 L227 102 L244 92 L264 73 L281 86 L298 70 L317 92 L336 74 L354 84 L373 61 L391 78 L410 56 L428 75 L445 43 L463 62 L480 41 L499 56 L516 29 L535 48 L552 35 L570 50 L589 25 L607 42 L625 20"
-    : "M15 57 L32 61 L43 83 L58 72 L72 102 L86 91 L104 120 L122 110 L140 135 L157 119 L174 148 L190 132 L208 158 L227 147 L244 174 L264 154 L281 181 L298 166 L317 191 L336 175 L354 197 L373 183 L391 205 L410 191 L428 211 L445 198 L463 219 L480 205 L499 228 L516 213 L535 233 L552 220 L570 239 L589 226 L607 245 L625 230";
-  return <div className="mt-4 h-60 w-full"><svg className="h-full w-full" viewBox="0 0 640 250" preserveAspectRatio="none"><defs><linearGradient id="nseStockFill" x1="0" x2="0" y1="0" y2="1"><stop stopColor={positive ? "#61c6e7" : "#ed8c93"} stopOpacity=".78"/><stop offset="1" stopColor={positive ? "#dff7fc" : "#ffe4e6"} stopOpacity=".4"/></linearGradient></defs>{[35,75,115,155,195,235].map(y => <path key={y} d={`M15 ${y} H625`} stroke="#e6e9ee"/>)}<path d={`${line} L625 235 L15 235 Z`} fill="url(#nseStockFill)"/><path d={line} fill="none" stroke={color} strokeWidth="3" vectorEffect="non-scaling-stroke"/><path d="M15 235 H625" stroke="#252a33" strokeWidth="1.3"/></svg><div className="mt-1 flex justify-between text-[10px] text-[#737887]"><span>09:15</span><span>10:30</span><span>12:00</span><span>13:30</span><span>15:30</span></div></div>;
-}
-
-function StockResearch() {
-  const [query, setQuery] = useState(() => {
-    const selectedFromMarket = window.sessionStorage.getItem("finpilot-selected-stock");
-    return STOCKS[selectedFromMarket] ? selectedFromMarket : "RELIANCE";
-  });
-  const [inputVal, setInputVal] = useState("");
-
-  const stock = STOCKS[query.toUpperCase()] || STOCKS["AAPL"];
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const key = inputVal.toUpperCase().trim();
-    if (STOCKS[key]) { setQuery(key); setInputVal(""); }
-  };
+  const stock = useMemo(() => STOCKS[query] || STOCKS["AAPL"], [query]);
 
   return (
-    <div className="max-w-[1080px] mx-auto flex flex-col h-full">
-
-      {/* Header */}
-      <div className="flex justify-between items-end mb-6 animate-fade-in-up">
-        <div>
-          <p className="text-[#3b82f6] text-[11px] font-bold tracking-[0.12em] mb-2 uppercase">Research</p>
-          <h1 className="text-[38px] font-semibold text-white tracking-[-0.025em] mb-2 leading-none">Stock Research Hub</h1>
-          <p className="text-[#71717a] text-[15px]">AI-powered company analysis — US & Indian markets.</p>
-        </div>
-        <div className="flex items-center gap-2 text-[12px] text-[#71717a]">
-          <Globe className="w-4 h-4" />
-          <span>NYSE · NASDAQ · NSE · BSE</span>
-        </div>
-      </div>
-
-      {/* Search */}
-      <form onSubmit={handleSearch} className="mb-2 animate-fade-in-up stagger-1">
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#52525b]" />
-          <input
-            type="text"
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-            placeholder="Search — AAPL, NVDA, TSLA, MSFT, RELIANCE..."
-            className="w-full bg-[#18181b] border border-[#27272a] rounded-xl pl-11 pr-32 py-3.5 text-[14px] text-white placeholder:text-[#52525b] focus:outline-none focus:border-[#3b82f6] focus:shadow-[0_0_0_3px_rgba(59,130,246,0.1)] transition-all"
-          />
-          <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 rounded-lg bg-[#3b82f6] hover:bg-[#2563eb] text-white text-[13px] font-semibold transition-all">
-            Search
-          </button>
-        </div>
-      </form>
-
-      {/* Quick switches */}
-      <div className="flex gap-2 mb-6 animate-fade-in-up stagger-1">
-        {QUICK_SEARCHES.map((sym) => (
-          <button
-            key={sym}
-            onClick={() => setQuery(sym)}
-            className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold border transition-all ${
-              query === sym
-                ? "bg-[#3b82f6]/10 border-[#3b82f6]/40 text-[#60a5fa]"
-                : "bg-[#18181b] border-[#27272a] text-[#71717a] hover:text-white hover:border-[#3f3f46]"
-            }`}
-          >
-            {sym}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-fade-in-up stagger-2">
-
-        {/* Main Panel */}
-        <div className="lg:col-span-2 space-y-4">
-
-          {/* NSE-style live market chart — opened when a Market Intelligence stock is selected */}
-          <div className="rounded-2xl border border-[#dadde5] bg-[#fbfcfe] p-5 text-[#161827] shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#e7e9ef] pb-4">
-              <div><div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[#138b32]"/><b className="text-base">{stock.ticker} • NSE market view</b><span className="rounded bg-[#eaf8ee] px-2 py-0.5 text-[9px] font-bold text-[#168542]">LIVE</span></div><p className="mt-1 text-xs text-[#707585]">Open, high, low and intraday price action</p></div>
-              <div className="flex rounded-lg bg-[#eeecf8] p-1">{["1D", "1M", "3M", "6M", "1Y"].map((range, index) => <button key={range} className={`rounded-md px-3 py-1.5 text-xs font-semibold ${index === 0 ? "bg-[#49368c] text-white" : "text-[#5e5970]"}`}>{range}</button>)}</div>
+    <div className="min-h-screen bg-[#050505] text-slate-300 p-4 lg:p-6 font-sans selection:bg-blue-500/30">
+      <div className="max-w-[1440px] mx-auto">
+        
+        {/* HEADER SECTION */}
+        <header className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+              <span className="text-[11px] font-black tracking-[0.2em] text-blue-500 uppercase">Investment Intelligence Center</span>
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-y-3 text-sm sm:grid-cols-4"><NseStat label="Open" value={stock.price} color="#49368c"/><NseStat label="High" value={stock.price} color="#138b32"/><NseStat label="Low" value={stock.price} color="#ca3b43"/><NseStat label="Change" value={stock.change} color={stock.positive ? "#098a28" : "#c73737"}/></div>
-            <NseLikeChart positive={stock.positive}/>
+            <h1 className="text-3xl lg:text-4xl font-bold text-white tracking-tight">Strategy Terminal</h1>
           </div>
 
-          {/* Company Header */}
-          <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-6">
-            <div className="flex justify-between items-start mb-5">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#3b82f6]/20 to-[#8b5cf6]/20 border border-[#3b82f6]/20 flex items-center justify-center text-xl font-black text-white">
-                  {stock.ticker.charAt(0)}
+          <div className="flex items-center gap-3 w-full lg:w-auto">
+            <div className="relative flex-1 lg:w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <input 
+                className="w-full bg-[#0c0c0e] border border-white/10 rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-blue-500/50 transition-all"
+                placeholder="Search ticker (e.g. NVDA)..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && STOCKS[search] && setQuery(search)}
+              />
+            </div>
+            <button className="p-3 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-all">
+              <Download className="w-4 h-4 text-slate-400" />
+            </button>
+          </div>
+        </header>
+
+        {/* QUICK ACCESS CHIPS */}
+        <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-2">
+          {QUICK_CHIPS.map(c => (
+            <button 
+              key={c}
+              onClick={() => setQuery(c)}
+              className={`px-4 py-1.5 rounded-full text-[11px] font-bold border transition-all whitespace-nowrap ${query === c ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-900/20' : 'bg-white/5 border-white/5 text-slate-500 hover:border-white/20'}`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-12 gap-6">
+          
+          {/* MAIN CONTENT (LEFT) */}
+          <div className="col-span-12 lg:col-span-8 space-y-6">
+            
+            {/* EXECUTIVE AI BRIEF */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              className="relative overflow-hidden bg-[#0c0c0e] border border-white/5 rounded-3xl p-6 lg:p-8"
+            >
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <Sparkles className="w-32 h-32 text-blue-500" />
+              </div>
+              
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-[10px] font-black text-blue-500 uppercase tracking-widest">AI Verdict: {stock.recommendation}</div>
+                  <div className="text-[10px] font-bold text-slate-500">CONFIDENCE: {stock.confidence}%</div>
                 </div>
+
+                <h2 className="text-2xl lg:text-3xl font-bold text-white mb-4 leading-tight">
+                  {stock.name} showing strong {stock.positive ? 'upward' : 'neutral'} momentum in {stock.sector}.
+                </h2>
+                <p className="text-slate-400 text-sm leading-relaxed max-w-3xl mb-8">{stock.summary}</p>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatItem label="Intrinsic Value" value={stock.intrinsicValue} color="text-green-400" subValue="DCF Model" />
+                  <StatItem label="AI Score" value={`${stock.score}/100`} subValue="Quality + Value" />
+                  <StatItem label="Risk Level" value="Medium" color="text-amber-400" subValue="Sector Adjusted" />
+                  <StatItem label="Horizon" value="12-24 Mo" subValue="Recommended" />
+                </div>
+              </div>
+            </motion.div>
+
+            {/* CHART SECTION */}
+            <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-6">
+              <SectionHeader icon={Activity} title="Technical Intelligence" badge="Live Action" />
+              <div className="h-[350px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={CHART_DATA}>
+                    <defs>
+                      <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                    <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis domain={['auto', 'auto']} hide />
+                    <Tooltip contentStyle={{ backgroundColor: '#0c0c0e', border: '1px solid #ffffff10', borderRadius: '12px', fontSize: '12px' }} />
+                    <Area type="monotone" dataKey="price" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center gap-6 mt-6">
+                {['1D', '1W', '1M', '3M', '1Y', 'ALL'].map(t => (
+                  <button key={t} className={`text-[11px] font-bold px-4 py-1 rounded-lg transition-all ${t === '1D' ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>{t}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* BULL VS BEAR */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-6 border-l-4 border-l-green-500/50">
+                <SectionHeader icon={TrendingUp} title="Expansionary Drivers" />
+                <ul className="space-y-4">
+                  {stock.bull.map((b, i) => (
+                    <li key={i} className="flex gap-3 text-sm text-slate-300 leading-snug">
+                      <div className="mt-1 h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" /> {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-6 border-l-4 border-l-red-500/50">
+                <SectionHeader icon={TrendingDown} title="Risk Headwinds" />
+                <ul className="space-y-4">
+                  {stock.bear.map((b, i) => (
+                    <li key={i} className="flex gap-3 text-sm text-slate-300 leading-snug">
+                      <div className="mt-1 h-1.5 w-1.5 rounded-full bg-red-500 shrink-0" /> {b}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* SIDEBAR (RIGHT) */}
+          <div className="col-span-12 lg:col-span-4 space-y-6">
+            
+            {/* PRICE CARD */}
+            <div className="bg-blue-600 rounded-3xl p-6 text-white shadow-xl shadow-blue-900/20">
+              <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-white leading-tight">{stock.name}</h2>
-                  <div className="flex items-center gap-2 mt-1 flex-wrap">
-                    <span className="badge badge-blue">{stock.exchange}</span>
-                    <span className="text-[12px] text-[#71717a]">{stock.sector}</span>
-                    <span className="text-[#27272a]">·</span>
-                    <span className="text-[12px] text-[#71717a]">{stock.industry}</span>
+                  <p className="text-blue-200 text-[10px] font-bold uppercase tracking-widest">{stock.ticker} Current</p>
+                  <h3 className="text-4xl font-black tracking-tighter mt-1">{stock.price}</h3>
+                </div>
+                <div className="p-2 bg-white/20 rounded-xl backdrop-blur-md">
+                  {stock.positive ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold bg-white/20 px-2 py-0.5 rounded-lg">{stock.change} Today</span>
+                <span className="text-[10px] text-blue-100 font-medium uppercase tracking-widest">Market Open</span>
+              </div>
+            </div>
+
+            {/* PERFORMANCE BAR CHART */}
+            <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-6">
+              <SectionHeader icon={BarChart2} title="Key Metrics" />
+              <div className="h-[150px] mb-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stock.metrics}>
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                      {stock.metrics.map((_, i) => <Cell key={i} fill={i === 0 ? '#3b82f6' : '#1e1e21'} />)}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { l: "Market Cap", v: stock.marketCap },
+                  { l: "P/E Ratio", v: stock.pe },
+                  { l: "EPS", v: stock.eps },
+                  { l: "Div Yield", v: stock.divYield }
+                ].map((item, i) => (
+                  <div key={i} className="flex justify-between items-center py-2 border-b border-white/5 last:border-0">
+                    <span className="text-xs text-slate-500 font-medium">{item.l}</span>
+                    <span className="text-xs text-white font-mono font-bold">{item.v}</span>
                   </div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-white">{stock.price}</div>
-                <div className={`flex items-center justify-end gap-1 mt-1 text-[13px] font-semibold ${stock.positive ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-                  {stock.positive ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                  {stock.change} Today
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* AI Summary */}
-            <div className="bg-[#0f0f11] rounded-xl p-4 border border-[#27272a]">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-[#8b5cf6]" />
-                <span className="text-[12px] font-semibold text-[#8b5cf6] uppercase tracking-wider">AI Company Summary</span>
-              </div>
-              <p className="text-[13px] text-[#a1a1aa] leading-relaxed">{stock.summary}</p>
-            </div>
-          </div>
-
-          {/* Bull / Bear */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-5 alert-success">
-              <h4 className="text-[#22c55e] font-semibold mb-3 flex items-center gap-2 text-[14px]">
-                <TrendingUp className="w-4 h-4" /> Bull Case
-              </h4>
-              <ul className="space-y-2">
-                {stock.bull.map((pt, i) => (
-                  <li key={i} className="flex gap-2 text-[13px] text-[#a1a1aa] leading-relaxed">
-                    <span className="w-1 h-1 rounded-full bg-[#22c55e] shrink-0 mt-2" />
-                    {pt}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-5 alert-urgent">
-              <h4 className="text-[#ef4444] font-semibold mb-3 flex items-center gap-2 text-[14px]">
-                <TrendingDown className="w-4 h-4" /> Bear Case
-              </h4>
-              <ul className="space-y-2">
-                {stock.bear.map((pt, i) => (
-                  <li key={i} className="flex gap-2 text-[13px] text-[#a1a1aa] leading-relaxed">
-                    <span className="w-1 h-1 rounded-full bg-[#ef4444] shrink-0 mt-2" />
-                    {pt}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* SWOT */}
-          <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <ShieldAlert className="w-4 h-4 text-[#f59e0b]" />
-              <h3 className="text-white font-semibold text-[14px]">SWOT Analysis</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: "Strengths", items: stock.swot.strengths, color: "#22c55e", bg: "rgba(34,197,94,0.06)" },
-                { label: "Weaknesses", items: stock.swot.weaknesses, color: "#ef4444", bg: "rgba(239,68,68,0.06)" },
-                { label: "Opportunities", items: stock.swot.opportunities, color: "#3b82f6", bg: "rgba(59,130,246,0.06)" },
-                { label: "Threats", items: stock.swot.threats, color: "#f59e0b", bg: "rgba(245,158,11,0.06)" },
-              ].map(({ label, items, color, bg }) => (
-                <div key={label} className="rounded-xl p-3 border border-[#27272a]" style={{ background: bg }}>
-                  <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color }}>{label}</p>
-                  <ul className="space-y-1.5">
-                    {items.map((item, i) => (
-                      <li key={i} className="text-[12px] text-[#a1a1aa] flex gap-1.5">
-                        <span className="w-1 h-1 rounded-full shrink-0 mt-1.5" style={{ background: color }} />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Competitor Comparison */}
-          <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="w-4 h-4 text-[#3b82f6]" />
-              <h3 className="text-white font-semibold text-[14px]">Competitor Comparison</h3>
-            </div>
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr className="border-b border-[#27272a]">
-                  <th className="text-left text-[11px] text-[#52525b] font-semibold uppercase tracking-wider pb-2">Company</th>
-                  <th className="text-right text-[11px] text-[#52525b] font-semibold uppercase tracking-wider pb-2">Price</th>
-                  <th className="text-right text-[11px] text-[#52525b] font-semibold uppercase tracking-wider pb-2">P/E</th>
-                  <th className="text-right text-[11px] text-[#52525b] font-semibold uppercase tracking-wider pb-2">Mkt Cap</th>
-                </tr>
-              </thead>
-              <tbody>
-                {/* Current stock highlighted */}
-                <tr className="border-b border-[#27272a] bg-[#3b82f6]/5">
-                  <td className="py-3 font-semibold text-white">{stock.ticker} <span className="text-[10px] text-[#3b82f6] ml-1 font-normal">(selected)</span></td>
-                  <td className="py-3 text-right text-white font-mono">{stock.price}</td>
-                  <td className="py-3 text-right text-white font-mono">{stock.pe}x</td>
-                  <td className="py-3 text-right text-white font-mono">{stock.marketCap}</td>
-                </tr>
-                {stock.competitors.map((c) => (
-                  <tr key={c.ticker} className="border-b border-[#27272a] last:border-0 hover:bg-[#1a1a1d] transition-colors">
-                    <td className="py-3 text-[#a1a1aa]">{c.name} <span className="text-[#52525b] text-[11px]">{c.ticker}</span></td>
-                    <td className="py-3 text-right text-[#a1a1aa] font-mono">{c.price}</td>
-                    <td className="py-3 text-right text-[#a1a1aa] font-mono">{c.pe}x</td>
-                    <td className="py-3 text-right text-[#a1a1aa] font-mono">{c.mktCap}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Sidebar Panel */}
-        <div className="space-y-4">
-          {/* Financial Metrics */}
-          <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <BarChart2 className="w-4 h-4 text-[#71717a]" />
-              <h3 className="text-white font-semibold text-[14px]">Financial Metrics</h3>
-            </div>
-            <div>
-              <MetricRow label="Market Cap" value={stock.marketCap} />
-              <MetricRow label="P/E Ratio" value={`${stock.pe}x`} />
-              <MetricRow label="EPS (TTM)" value={stock.eps} />
-              <MetricRow label="Revenue" value={stock.revenue} />
-              <MetricRow label="Div Yield" value={stock.divYield} />
-              <MetricRow label="Beta" value={stock.beta} />
-              <MetricRow label="52W Range" value={stock.week52} last />
-            </div>
-          </div>
-
-          {/* Latest News */}
-          <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-5">
-            <h3 className="text-white font-semibold text-[14px] mb-3">Latest News</h3>
-            <div className="space-y-3">
-              {stock.news.map((n, i) => (
-                <div key={i} className="flex gap-3 pb-3 border-b border-[#27272a] last:border-0 last:pb-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#3b82f6] shrink-0 mt-1.5" />
-                  <div>
-                    <p className="text-[13px] text-[#e4e4e7] leading-snug">{n.headline}</p>
-                    <p className="text-[11px] text-[#52525b] mt-1">{n.time}</p>
+            {/* NEWS & SENTIMENT */}
+            <div className="bg-[#0c0c0e] border border-white/5 rounded-3xl p-6">
+              <SectionHeader icon={Globe} title="News Intelligence" />
+              <div className="space-y-6">
+                {stock.news.map((n, i) => (
+                  <div key={i} className="group cursor-pointer">
+                    <div className="flex justify-between items-start gap-4 mb-2">
+                      <p className="text-xs font-bold text-slate-200 group-hover:text-blue-400 transition-colors leading-relaxed">{n.headline}</p>
+                      <span className={`text-[9px] font-black px-1.5 py-0.5 rounded shrink-0 ${n.sentiment === 'positive' ? 'bg-green-500/10 text-green-500' : 'bg-slate-500/10 text-slate-400'}`}>{n.impact}</span>
+                    </div>
+                    <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest">AI Summarized • 4h ago</p>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ACTION SIDEBAR */}
+            <div className="grid grid-cols-1 gap-3">
+              <button className="w-full flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-all group">
+                <div className="flex items-center gap-3">
+                  <Cpu className="w-4 h-4 text-purple-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">Run DCF Model</span>
                 </div>
-              ))}
+                <ChevronDown className="w-4 h-4 text-slate-600" />
+              </button>
+              <button className="w-full flex items-center justify-between p-4 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 transition-all group">
+                <div className="flex items-center gap-3">
+                  <Briefcase className="w-4 h-4 text-blue-400" />
+                  <span className="text-xs font-bold text-white uppercase tracking-wider">Portfolio Impact</span>
+                </div>
+                <ChevronDown className="w-4 h-4 text-slate-600" />
+              </button>
             </div>
           </div>
 
-          {/* Risk Rating */}
-          <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-5">
-            <h3 className="text-white font-semibold text-[14px] mb-3">Risk Profile</h3>
-            {[
-              { label: "Volatility", value: parseFloat(stock.beta) > 1.5 ? 80 : parseFloat(stock.beta) > 1.0 ? 55 : 35, color: "#f59e0b" },
-              { label: "Valuation Risk", value: parseFloat(stock.pe) > 50 ? 80 : parseFloat(stock.pe) > 30 ? 55 : 35, color: "#ef4444" },
-              { label: "Growth Score", value: parseFloat(stock.beta) > 1.5 ? 85 : 68, color: "#22c55e" },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="mb-3 last:mb-0">
-                <div className="flex justify-between mb-1">
-                  <span className="text-[12px] text-[#71717a]">{label}</span>
-                  <span className="text-[12px] font-semibold" style={{ color }}>{value}/100</span>
-                </div>
-                <div className="progress-bar">
-                  <div className="progress-bar-fill" style={{ width: `${value}%`, background: color }} />
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
+      
+      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
     </div>
   );
 }
-
-export { StockResearch };

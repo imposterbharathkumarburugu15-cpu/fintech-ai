@@ -35,14 +35,18 @@ export function Dashboard({ onViewChange, onToggleChat }) {
       <div className="page-header flex flex-col md:flex-row md:items-end justify-between mb-8">
         <div>
           <h1 className="page-title text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-2">
-            Good Morning, Maya <span className="text-amber-400 text-2xl">🌅</span>
+            Your finances at a glance <span className="text-amber-400 text-2xl"></span>
           </h1>
           <p className="text-[#a1a1aa] text-sm mt-1">Here's your financial operating picture for today.</p>
         </div>
         <div className="flex items-center gap-3 text-xs text-[#a1a1aa] mt-4 md:mt-0">
           <span className="flex items-center gap-1.5 bg-[#121214] px-3 py-1.5 rounded-lg border border-white/5">
             <Calendar className="w-3.5 h-3.5 text-[#8b5cf6]" />
-            May 22, 2025
+            {new Date().toLocaleDateString('en-US', { 
+              month: 'long', 
+              day: 'numeric', 
+              year: 'numeric' 
+            })}
           </span>
           <span className="flex items-center gap-1.5 bg-[#121214] px-3 py-1.5 rounded-lg border border-white/5">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />

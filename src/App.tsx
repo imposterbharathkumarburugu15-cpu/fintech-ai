@@ -5,7 +5,7 @@ import { TopNav } from "./components/TopNav";
 import { NexusChat } from "./components/NexusAI";
 import { AddTransactionModal } from "./components/AddTransactionModal";
 import { Dashboard } from "./components/Dashboard";
-import { ExpenseIntelligence } from "./components/ExpenseIntelligence";
+import { ExpenseIntelligence  } from "./components/ExpenseIntelligence";
 import { StockResearch } from "./components/StockResearch";
 import { PortfolioIntelligence } from "./components/PortfolioIntelligence";
 import { GoalPlanner } from "./components/GoalPlanner";
@@ -27,14 +27,12 @@ function App() {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Check if supabase is available
     if (!supabase) {
       console.error('❌ Supabase client not initialized');
       setLoading(false);
       return;
     }
 
-    // Get initial session
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         setUser(session?.user || null);
@@ -45,7 +43,6 @@ function App() {
         setLoading(false);
       });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
       setLoading(false);
@@ -143,10 +140,8 @@ function App() {
           setActiveView("stocks");
         }} />;
       case "alerts":
-        return <SmartAlerts onViewChange={handleViewChange} onOpenStock={(symbol: string) => {
-          window.sessionStorage.setItem("finpilot-selected-stock", symbol);
-          setActiveView("stocks");
-        }} />;
+        // ✅ SmartAlerts takes NO props
+        return <SmartAlerts />;
       default:
         return <Dashboard onViewChange={setActiveView} onToggleChat={() => setIsChatOpen(true)} />;
     }
