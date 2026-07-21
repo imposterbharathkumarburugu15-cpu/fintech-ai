@@ -866,8 +866,278 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           )
         });
   break;
-        break;
 
+      case 'health':
+  // ===== FINANCIAL WELLNESS =====
+        const healthScore = data.healthScore || 0;
+        
+        // Calculate emergency fund status
+        const monthlyExpenses = data.expenses.total || 0;
+        const emergencyFund = data.goals.find(g => g.name === 'Emergency Fund')?.progress || 0;
+        const emergencyFundMonths = monthlyExpenses > 0 ? Math.round((emergencyFund / 100) * 6) : 0;
+        
+        // Calculate debt-to-income ratio (simplified)
+        const monthlyIncome = 60000; // This should come from data
+        const debtRatio = monthlyIncome > 0 ? Math.round((monthlyExpenses / monthlyIncome) * 100) : 0;
+        
+        // Get goals progress
+        const goalsOnTrack = data.goals.filter(g => g.progress > 50).length;
+        const totalGoals = data.goals.length || 1;
+        const goalProgress = Math.round((goalsOnTrack / totalGoals) * 100);
+
+        // 1. Financial Wellness Score
+        sections.push({
+          heading: '❤️ Your Financial Wellness Score',
+          content: '',
+          type: healthScore >= 70 ? 'achievement' : 'warning',
+          customComponent: (
+            <div className="space-y-4 mt-2">
+              <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-6">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  {/* Score Circle */}
+                  <div className="relative w-32 h-32 flex-shrink-0">
+                    <svg className="w-32 h-32 transform -rotate-90">
+                      <circle cx="64" cy="64" r="56" stroke="#374151" strokeWidth="12" fill="none"/>
+                      <circle 
+                        cx="64" cy="64" r="56" 
+                        stroke={healthScore >= 70 ? '#10B981' : healthScore >= 50 ? '#F59E0B' : '#EF4444'} 
+                        strokeWidth="12" 
+                        fill="none" 
+                        strokeDasharray={`${(healthScore / 100) * 351.86} 351.86`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center flex-col">
+                      <span className="text-3xl font-bold text-white">{healthScore}</span>
+                      <span className="text-xs text-gray-400">/100</span>
+                    </div>
+                  </div>
+
+                  {/* Score Details */}
+                  <div className="flex-1 text-center md:text-left">
+                    <h3 className="text-xl font-bold text-white">
+                      {healthScore >= 80 ? '🌟 Excellent Financial Health' :
+                      healthScore >= 60 ? '👍 Good Financial Health' :
+                      healthScore >= 40 ? '📊 Fair Financial Health' :
+                      '⚠️ Needs Attention'}
+                    </h3>
+                    <p className="text-gray-400 text-sm mt-1">
+                      {healthScore >= 80 ? 'You\'re doing amazing! Your finances are in great shape.' :
+                      healthScore >= 60 ? 'You\'re on the right track! Keep building on this foundation.' :
+                      healthScore >= 40 ? 'There\'s room for improvement. Let\'s work on it together.' :
+                      'Don\'t worry, we can turn this around. Start with small steps.'}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                        savingsRate >= 20 ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'
+                      }`}>
+                        Savings: {savingsRate}%
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                        debtRatio < 30 ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'
+                      }`}>
+                        Debt Ratio: {debtRatio}%
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                        goalProgress > 50 ? 'bg-green-900/50 text-green-400' : 'bg-yellow-900/50 text-yellow-400'
+                      }`}>
+                        Goals: {goalsOnTrack}/{totalGoals} On Track
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700 text-center">
+                  <p className="text-gray-400 text-xs">Emergency Fund</p>
+                  <p className="text-white font-bold text-lg">{emergencyFund}%</p>
+                  <p className="text-gray-500 text-xs">{emergencyFundMonths} months saved</p>
+                </div>
+                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700 text-center">
+                  <p className="text-gray-400 text-xs">Savings Rate</p>
+                  <p className={`font-bold text-lg ${savingsRate >= 20 ? 'text-green-400' : 'text-yellow-400'}`}>
+                    {savingsRate}%
+                  </p>
+                  <p className="text-gray-500 text-xs">{savingsRate >= 20 ? '✅ On Target' : '⬆ Needs Improvement'}</p>
+                </div>
+                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700 text-center">
+                  <p className="text-gray-400 text-xs">Monthly Expenses</p>
+                  <p className="text-white font-bold text-lg">₹{monthlyExpenses.toLocaleString()}</p>
+                  <p className="text-gray-500 text-xs">Top: {topCategory}</p>
+                </div>
+                <div className="bg-gray-800/50 p-3 rounded-lg border border-gray-700 text-center">
+                  <p className="text-gray-400 text-xs">Goals Progress</p>
+                  <p className="text-white font-bold text-lg">{goalProgress}%</p>
+                  <p className="text-gray-500 text-xs">{goalsOnTrack}/{totalGoals} goals on track</p>
+                </div>
+              </div>
+            </div>
+          )
+        });
+
+        // 2. Personalized Action Plan
+        sections.push({
+          heading: '🎯 Your Personalized Action Plan',
+          content: '',
+          type: 'insight',
+          customComponent: (
+            <div className="space-y-3 mt-2">
+              {savingsRate < 20 && (
+                <div className="bg-blue-900/20 border border-blue-800/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">💰</span>
+                    <div>
+                      <h4 className="text-blue-400 font-semibold">Boost Your Savings</h4>
+                      <p className="text-sm text-gray-300 mt-1">
+                        Your savings rate is {savingsRate}%. The recommended target is 20%.
+                      </p>
+                      <ul className="mt-2 space-y-1 text-sm text-gray-300">
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-400">•</span>
+                          <span>Set up auto-transfer of 5% more to savings each month</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-blue-400">•</span>
+                          <span>Review {topCategory} spending - find ₹{Math.round(monthlyExpenses * 0.05).toLocaleString()} to save</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {debtRatio > 40 && (
+                <div className="bg-yellow-900/20 border border-yellow-800/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">📊</span>
+                    <div>
+                      <h4 className="text-yellow-400 font-semibold">Manage Your Expenses</h4>
+                      <p className="text-sm text-gray-300 mt-1">
+                        Your debt-to-income ratio is {debtRatio}%. Aim for below 30%.
+                      </p>
+                      <ul className="mt-2 space-y-1 text-sm text-gray-300">
+                        <li className="flex items-start gap-2">
+                          <span className="text-yellow-400">•</span>
+                          <span>Create a budget using the 50/30/20 rule</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-yellow-400">•</span>
+                          <span>Track every expense for 30 days to identify leaks</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {emergencyFund < 50 && (
+                <div className="bg-purple-900/20 border border-purple-800/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">🛡️</span>
+                    <div>
+                      <h4 className="text-purple-400 font-semibold">Build Emergency Fund</h4>
+                      <p className="text-sm text-gray-300 mt-1">
+                        Your emergency fund is {emergencyFund}% of the 6-month target.
+                      </p>
+                      <ul className="mt-2 space-y-1 text-sm text-gray-300">
+                        <li className="flex items-start gap-2">
+                          <span className="text-purple-400">•</span>
+                          <span>Save ₹{Math.round(monthlyExpenses * 0.1).toLocaleString()} monthly for emergency fund</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-purple-400">•</span>
+                          <span>Keep in a separate high-yield savings account</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {goalProgress < 50 && (
+                <div className="bg-green-900/20 border border-green-800/30 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl">🎯</span>
+                    <div>
+                      <h4 className="text-green-400 font-semibold">Accelerate Your Goals</h4>
+                      <p className="text-sm text-gray-300 mt-1">
+                        {goalsOnTrack}/{totalGoals} goals are on track. Let's get them all!
+                      </p>
+                      <ul className="mt-2 space-y-1 text-sm text-gray-300">
+                        <li className="flex items-start gap-2">
+                          <span className="text-green-400">•</span>
+                          <span>Break big goals into smaller milestones</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="text-green-400">•</span>
+                          <span>Set up automatic transfers toward each goal</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        });
+
+        // 3. Financial Health Checklist
+        sections.push({
+          heading: '✅ Financial Health Checklist',
+          content: '',
+          type: 'insight',
+          customComponent: (
+            <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-4 mt-2">
+              <div className="space-y-3">
+                {[
+                  { label: 'Emergency Fund (3-6 months of expenses)', status: emergencyFund >= 60 ? '✅' : '⬜', 
+                    tip: emergencyFund < 60 ? 'Aim to save 3-6 months of expenses' : 'Great job! You\'re well protected.' },
+                  { label: 'Savings Rate (20% of income)', status: savingsRate >= 20 ? '✅' : '⬜',
+                    tip: savingsRate < 20 ? 'Try saving 20% of your income' : 'Excellent savings habit!' },
+                  { label: 'Debt-to-Income Ratio (under 30%)', status: debtRatio < 30 ? '✅' : '⬜',
+                    tip: debtRatio >= 30 ? 'Reduce debt or increase income' : 'Healthy debt level!' },
+                  { label: 'Investing for Future', status: data.investments.totalValue > 0 ? '✅' : '⬜',
+                    tip: data.investments.totalValue === 0 ? 'Start investing even with small amounts' : 'Building wealth for the future!' },
+                ].map((item, index) => (
+                  <div key={index} className="flex items-start gap-3 border-b border-gray-700/50 pb-2 last:border-0 last:pb-0">
+                    <span className="text-2xl">{item.status}</span>
+                    <div className="flex-1">
+                      <p className="text-white font-medium text-sm">{item.label}</p>
+                      <p className="text-gray-400 text-xs mt-0.5">{item.tip}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        });
+
+        // 4. Motivational Message
+        sections.push({
+          heading: '💪 Your Financial Journey',
+          content: '',
+          type: 'achievement',
+          customComponent: (
+            <div className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-xl border border-blue-800/30 p-6 mt-2 text-center">
+              <p className="text-blue-300 text-sm">
+                {healthScore >= 80 
+                  ? '🌟 You\'re a financial rockstar! Keep inspiring others with your discipline.'
+                  : healthScore >= 60 
+                  ? '🚀 You\'re on the right path! Every small step counts towards your financial freedom.'
+                  : healthScore >= 40
+                  ? '💪 You have the power to improve your financial health. Start with one goal at a time.'
+                  : '🌱 Everyone starts somewhere. Today is the first day of your financial transformation!'}
+              </p>
+              <p className="text-gray-400 text-xs mt-3">
+                Remember: Financial wellness is a journey, not a destination. Keep going! 💫
+              </p>
+            </div>
+          )
+        });
+        break;
+ 
       default:
         sections.push({
           heading: 'Spending Distribution',
@@ -926,6 +1196,7 @@ useEffect(() => {
   window.addEventListener('resize', handleResize);
   return () => window.removeEventListener('resize', handleResize);
 }, []);
+
 
   // ===== EXPORT HANDLER =====
   const handleExport = async (format: 'pdf' | 'excel') => {
