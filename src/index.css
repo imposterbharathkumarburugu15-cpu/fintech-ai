@@ -687,88 +687,31 @@ body {
   border-color: #3f3f46;
 }
 
-/* src/index.css - Replace the print section with this */
+/* src/index.css - Add these print styles */
 
 @media print {
-  /* Hide no-print elements */
-  .no-print {
-    display: none !important;
+  /* Hide everything except the print container */
+  body * {
+    visibility: hidden !important;
   }
-  
-  /* Ensure the report content is fully visible */
-  #report-content {
+  #print-container, #print-container * {
+    visibility: visible !important;
+  }
+  #print-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
     background: #1a1a2e !important;
     color: #ffffff !important;
     padding: 20px !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
   }
-  
-  /* Make all sections visible */
-  #report-content * {
-    visibility: visible !important;
-    opacity: 1 !important;
+  .no-print {
+    display: none !important;
   }
-  
-  /* Fix chart rendering */
+  /* Ensure charts render */
   .recharts-wrapper {
     width: 100% !important;
     height: 300px !important;
-    overflow: visible !important;
-  }
-  .recharts-surface {
-    width: 100% !important;
-    height: 100% !important;
-  }
-  .recharts-pie, .recharts-bar, .recharts-line {
-    opacity: 1 !important;
-  }
-  
-  /* Ensure all text is visible */
-  .text-gray-300 { color: #d1d5db !important; }
-  .text-gray-400 { color: #9ca3af !important; }
-  .text-white { color: #ffffff !important; }
-  .text-blue-400 { color: #60a5fa !important; }
-  .text-yellow-400 { color: #fbbf24 !important; }
-  .text-green-400 { color: #34d399 !important; }
-  .text-red-400 { color: #f87171 !important; }
-  
-  /* Fix backgrounds */
-  .bg-gray-800\50 { background: rgba(31, 41, 55, 0.5) !important; }
-  .bg-gray-900 { background: #111827 !important; }
-  .bg-gray-800 { background: #1f2937 !important; }
-  .bg-gray-700 { background: #374151 !important; }
-  
-  /* Fix borders */
-  .border-gray-700 { border-color: #374151 !important; }
-  .border-gray-600 { border-color: #4b5563 !important; }
-  
-  /* Page margins and size */
-  @page {
-    margin: 0.5cm;
-    size: A4 portrait;
-  }
-  
-  /* Ensure all content is visible */
-  .overflow-hidden { overflow: visible !important; }
-  .h-screen { height: auto !important; }
-  .min-h-screen { min-height: auto !important; }
-  
-  /* Remove animations */
-  .animate-pulse, .animate-spin {
-    animation: none !important;
-  }
-  
-  /* Remove cursor pointer */
-  .cursor-pointer {
-    cursor: default !important;
-  }
-  
-  /* Fix motion divs */
-  .motion-div {
-    transform: none !important;
-    opacity: 1 !important;
   }
 }

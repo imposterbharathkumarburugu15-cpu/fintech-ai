@@ -14,7 +14,6 @@ interface ReportData {
 // ===== TOAST FUNCTIONS =====
 
 function showLoadingToast(message: string): HTMLElement | null {
-  // Remove any existing toast
   const existing = document.querySelector('.pdf-toast');
   if (existing) existing.remove();
 
@@ -47,7 +46,6 @@ function showLoadingToast(message: string): HTMLElement | null {
   `;
   document.body.appendChild(toast);
 
-  // Add animation styles if not already present
   if (!document.getElementById('pdf-toast-styles')) {
     const style = document.createElement('style');
     style.id = 'pdf-toast-styles';
@@ -60,10 +58,6 @@ function showLoadingToast(message: string): HTMLElement | null {
         from { opacity: 0; transform: translateY(20px); }
         to { opacity: 1; transform: translateY(0); }
       }
-      @keyframes fadeOut {
-        from { opacity: 1; transform: translateY(0); }
-        to { opacity: 0; transform: translateY(20px); }
-      }
     `;
     document.head.appendChild(style);
   }
@@ -72,7 +66,6 @@ function showLoadingToast(message: string): HTMLElement | null {
 }
 
 function showSuccessToast(message: string): void {
-  // Remove any existing toast
   const existing = document.querySelector('.pdf-toast');
   if (existing) existing.remove();
 
@@ -105,15 +98,11 @@ function showSuccessToast(message: string): void {
   document.body.appendChild(toast);
 
   setTimeout(() => {
-    toast.style.animation = 'fadeOut 0.3s ease-in';
-    setTimeout(() => {
-      if (toast.parentNode) toast.remove();
-    }, 300);
+    if (toast.parentNode) toast.remove();
   }, 3000);
 }
 
 function showErrorToast(message: string): void {
-  // Remove any existing toast
   const existing = document.querySelector('.pdf-toast');
   if (existing) existing.remove();
 
@@ -146,10 +135,7 @@ function showErrorToast(message: string): void {
   document.body.appendChild(toast);
 
   setTimeout(() => {
-    toast.style.animation = 'fadeOut 0.3s ease-in';
-    setTimeout(() => {
-      if (toast.parentNode) toast.remove();
-    }, 300);
+    if (toast.parentNode) toast.remove();
   }, 3000);
 }
 
@@ -167,12 +153,45 @@ export async function exportReportToPDF(
       throw new Error('Report element not found');
     }
 
-    // Save current title
+    // Save original title
     const originalTitle = document.title;
     document.title = reportData.title || 'Financial Report';
 
-    // Scroll to top
-    window.scrollTo(0, 0);
+    // Create a print container
+    const printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    printContainer.style.cssText = `
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      background: #1a1a2e;
+      color: #ffffff;
+      padding: 40px;
+      z-index: -1;
+      opacity: 0;
+      pointer-events: none;
+    `;
+
+    // Clone the content
+    const clone = element.cloneNode(true) as HTMLElement;
+    
+    // Remove interactive elements from clone
+    const buttons = clone.querySelectorAll('button, .no-print, .cursor-pointer');
+    buttons.forEach(el => {
+      if (el.classList) el.classList.add('no-print');
+    });
+
+    // Fix chart containers in clone
+    const charts = clone.querySelectorAll('.recharts-wrapper');
+    charts.forEach((chart: any) => {
+      chart.style.width = '100%';
+      chart.style.height = '300px';
+      chart.style.display = 'block';
+    });
+
+    printContainer.appendChild(clone);
+    document.body.appendChild(printContainer);
 
     // Add print styles
     const printStyles = document.createElement('style');
@@ -182,10 +201,10 @@ export async function exportReportToPDF(
         body * {
           visibility: hidden !important;
         }
-        #report-content, #report-content * {
+        #print-container, #print-container * {
           visibility: visible !important;
         }
-        #report-content {
+        #print-container {
           position: absolute !important;
           left: 0 !important;
           top: 0 !important;
@@ -193,12 +212,13 @@ export async function exportReportToPDF(
           background: #1a1a2e !important;
           color: #ffffff !important;
           padding: 20px !important;
-          max-width: 100% !important;
+          opacity: 1 !important;
+          z-index: 9999 !important;
+          pointer-events: auto !important;
         }
         .recharts-wrapper {
           width: 100% !important;
           height: 300px !important;
-          overflow: visible !important;
           page-break-inside: avoid !important;
         }
         .recharts-surface {
@@ -221,24 +241,33 @@ export async function exportReportToPDF(
           margin: 0.5cm;
           size: A4 portrait;
         }
+        .space-y-6 > * {
+          page-break-inside: avoid;
+        }
       }
     `;
     document.head.appendChild(printStyles);
 
-    // Wait for styles
+    // Make print container visible for print
+    printContainer.style.opacity = '1';
+    printContainer.style.zIndex = '9999';
+    printContainer.style.pointerEvents = 'auto';
+
+    // Wait for render
     await new Promise(resolve => setTimeout(resolve, 500));
-
-    // Trigger print
-    window.print();
-
-    // Clean up
-    document.title = originalTitle;
-    const styles = document.getElementById('print-styles');
-    if (styles) styles.remove();
 
     // Remove loading toast
     const loadingToast = document.querySelector('.pdf-toast');
     if (loadingToast) loadingToast.remove();
+
+    // Trigger print
+    window.print();
+
+    // Cleanup
+    document.title = originalTitle;
+    const styles = document.getElementById('print-styles');
+    if (styles) styles.remove();
+    if (printContainer.parentNode) printContainer.remove();
 
     showSuccessToast('PDF ready! Use "Save as PDF" in the print dialog.');
 
