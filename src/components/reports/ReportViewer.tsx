@@ -1261,200 +1261,200 @@ useEffect(() => {
     );
   }
 
-  return (
-    <div id="report-content" className="max-w-7xl mx-auto p-4 md:p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full">
-              AI Generated
-            </span>
-            <span className="px-3 py-1 bg-green-900 text-green-400 text-xs font-medium rounded-full">
-              Live Data
-            </span>
-            <span className="px-3 py-1 bg-gray-700 text-gray-300 text-xs font-medium rounded-full">
-              {reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report
-            </span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-white">
-            {reportType === 'expense' ? 'Expense Analysis' :
-             reportType === 'investment' ? 'Portfolio Intelligence' :
-             reportType === 'health' ? 'Financial Wellness' :
-             'Monthly Financial Review'}
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Generated on {new Date(report.generatedAt).toLocaleString()}
-          </p>
+return (
+  <div id="report-content" className="max-w-7xl mx-auto p-4 md:p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl">
+    {/* Header */}
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div>
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <span className="px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded-full">
+            AI Generated
+          </span>
+          <span className="px-3 py-1 bg-green-900 text-green-400 text-xs font-medium rounded-full">
+            Live Data
+          </span>
+          <span className="px-3 py-1 bg-gray-700 text-gray-300 text-xs font-medium rounded-full">
+            {reportType.charAt(0).toUpperCase() + reportType.slice(1)} Report
+          </span>
         </div>
+        <h1 className="text-3xl md:text-4xl font-bold text-white">
+          {reportType === 'expense' ? 'Expense Analysis' :
+           reportType === 'investment' ? 'Portfolio Intelligence' :
+           reportType === 'health' ? 'Financial Wellness' :
+           'Monthly Financial Review'}
+        </h1>
+        <p className="text-gray-400 text-sm mt-1">
+          Generated on {new Date(report.generatedAt).toLocaleString()}
+        </p>
+      </div>
+      
+      <div className="flex flex-wrap gap-2 w-full md:w-auto no-print">
+        <button 
+          onClick={() => setShowGoalTracker(true)}
+          className="flex-1 md:flex-none justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+        >
+          <Target className="w-4 h-4" />
+          Goals
+        </button>
         
-        <div className="flex flex-wrap gap-2 w-full md:w-auto">
-          <button 
-            onClick={() => setShowGoalTracker(true)}
-            className="flex-1 md:flex-none justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
-          >
-            <Target className="w-4 h-4" />
-            Goals
-          </button>
-          
-          <button 
-            onClick={() => handleExport('pdf')}
-            disabled={isExporting}
-            className={`flex-1 md:flex-none justify-center px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-              isExporting 
-                ? 'bg-gray-600 cursor-not-allowed' 
-                : 'bg-blue-600 hover:bg-blue-700'
-            } text-white`}
-          >
-            {isExporting ? 'Exporting...' : 'Export PDF'}
-          </button>
-          <button 
-            onClick={() => handleExport('excel')}
-            className="flex-1 md:flex-none justify-center px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
-          >
-            Export Excel
-          </button>
+        <button 
+          onClick={() => handleExport('pdf')}
+          disabled={isExporting}
+          className={`flex-1 md:flex-none justify-center px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+            isExporting 
+              ? 'bg-gray-600 cursor-not-allowed' 
+              : 'bg-blue-600 hover:bg-blue-700'
+          } text-white`}
+        >
+          {isExporting ? 'Exporting...' : 'Export PDF'}
+        </button>
+        <button 
+          onClick={() => handleExport('excel')}
+          className="flex-1 md:flex-none justify-center px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
+        >
+          Export Excel
+        </button>
+      </div>
+    </div>
+
+    {/* Executive Summary - ONLY for Expense Analysis */}
+    {reportType === 'expense' && report.summary && (
+      <div className="mb-8 p-6 bg-gray-800/50 border border-gray-700 rounded-xl">
+        <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Executive Summary</h2>
+        <div className="space-y-1.5">
+          {report.summary.split(' • ').map((point: string, index: number) => (
+            <div key={index} className="flex items-start gap-2 text-gray-300">
+              <span className="text-blue-400 mt-1">•</span>
+              <span>{point}</span>
+            </div>
+          ))}
         </div>
       </div>
+    )}
 
-      {/* Executive Summary - ONLY for Expense Analysis */}
-      {reportType === 'expense' && report.summary && (
-        <div className="mb-8 p-6 bg-gray-800/50 border border-gray-700 rounded-xl">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Executive Summary</h2>
-          <div className="space-y-1.5">
-            {report.summary.split(' • ').map((point: string, index: number) => (
-              <div key={index} className="flex items-start gap-2 text-gray-300">
-                <span className="text-blue-400 mt-1">•</span>
-                <span>{point}</span>
-              </div>
-            ))}
-          </div>
+    {/* Report Sections */}
+    <div className="space-y-6">
+      {report.sections.map((section: any, index: number) => (
+        <motion.div
+          key={index}
+          className={`p-6 rounded-xl border transition-all cursor-pointer ${
+            activeSection === index ? 'ring-2 ring-blue-500 shadow-lg' : 'hover:shadow-lg'
+          } ${
+            section.type === 'warning' ? 'border-yellow-800/30 bg-yellow-900/20' :
+            section.type === 'achievement' ? 'border-green-800/30 bg-green-900/20' :
+            'border-gray-700/50 bg-gray-800/50'
+          }`}
+          onClick={() => setActiveSection(activeSection === index ? null : index)}
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: index * 0.1 }}
+        >
+          <h3 className={`text-xl font-semibold mb-3 ${
+            section.type === 'warning' ? 'text-yellow-400' :
+            section.type === 'achievement' ? 'text-green-400' :
+            'text-gray-200'
+          }`}>{section.heading}</h3>
+          
+          {section.customComponent ? (
+            <div className="mt-2">
+              {section.customComponent}
+            </div>
+          ) : (
+            <p className="text-gray-300 leading-relaxed whitespace-pre-line">{section.content}</p>
+          )}
+          
+          {section.chartData && !section.customComponent && activeSection === index && (
+            <motion.div 
+              className="mt-6 h-64"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 256 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ReportCharts 
+                data={section.chartData} 
+                chartType={section.chartType || 'pie'} 
+              />
+            </motion.div>
+          )}
+          
+          {section.chartData && !section.customComponent && (
+            <div className="mt-3 text-sm text-blue-400">
+              {activeSection === index ? 'Hide chart' : 'Click to view chart'}
+            </div>
+          )}
+        </motion.div>
+      ))}
+    </div>
+
+    {/* Key Takeaways - ONLY for Expense Analysis */}
+    {reportType === 'expense' && report.keyTakeaways && report.keyTakeaways.length > 0 && (
+      <div className="mt-8 p-6 bg-yellow-900/20 border border-yellow-800/30 rounded-xl">
+        <h3 className="text-sm font-semibold text-yellow-400 uppercase tracking-wide mb-3">Key Takeaways</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {report.keyTakeaways.map((takeaway: string, i: number) => (
+            <div 
+              key={i}
+              className="flex items-start gap-2 bg-gray-800/50 p-3 rounded-lg border border-gray-700"
+            >
+              <span className="text-yellow-500 mt-0.5">•</span>
+              <span className="text-gray-300">{takeaway}</span>
+            </div>
+          ))}
         </div>
-      )}
+      </div>
+    )}
 
-      {/* Report Sections */}
-      <div className="space-y-6">
-        {report.sections.map((section: any, index: number) => (
-          <motion.div
-            key={index}
-            className={`p-6 rounded-xl border transition-all cursor-pointer ${
-              activeSection === index ? 'ring-2 ring-blue-500 shadow-lg' : 'hover:shadow-lg'
-            } ${
-              section.type === 'warning' ? 'border-yellow-800/30 bg-yellow-900/20' :
-              section.type === 'achievement' ? 'border-green-800/30 bg-green-900/20' :
-              'border-gray-700/50 bg-gray-800/50'
-            }`}
-            onClick={() => setActiveSection(activeSection === index ? null : index)}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.1 }}
-          >
-            <h3 className={`text-xl font-semibold mb-3 ${
-              section.type === 'warning' ? 'text-yellow-400' :
-              section.type === 'achievement' ? 'text-green-400' :
-              'text-gray-200'
-            }`}>{section.heading}</h3>
-            
-            {section.customComponent ? (
-              <div className="mt-2">
-                {section.customComponent}
-              </div>
-            ) : (
-              <p className="text-gray-300 leading-relaxed whitespace-pre-line">{section.content}</p>
-            )}
-            
-            {section.chartData && !section.customComponent && activeSection === index && (
-              <motion.div 
-                className="mt-6 h-64"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 256 }}
-                transition={{ duration: 0.3 }}
-              >
-                <ReportCharts 
-                  data={section.chartData} 
-                  chartType={section.chartType || 'pie'} 
-                />
-              </motion.div>
-            )}
-            
-            {section.chartData && !section.customComponent && (
-              <div className="mt-3 text-sm text-blue-400">
-                {activeSection === index ? 'Hide chart' : 'Click to view chart'}
-              </div>
-            )}
-          </motion.div>
+    {/* Recommendations */}
+    <div className="mt-8">
+      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">Recommended Actions</h3>
+      <div className="grid md:grid-cols-3 gap-4">
+        {report.recommendations.map((rec: Recommendation, i: number) => (
+          <RecommendationCard key={i} recommendation={rec} index={i} />
         ))}
       </div>
-
-      {/* Key Takeaways - ONLY for Expense Analysis */}
-      {reportType === 'expense' && report.keyTakeaways && report.keyTakeaways.length > 0 && (
-        <div className="mt-8 p-6 bg-yellow-900/20 border border-yellow-800/30 rounded-xl">
-          <h3 className="text-sm font-semibold text-yellow-400 uppercase tracking-wide mb-3">Key Takeaways</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {report.keyTakeaways.map((takeaway: string, i: number) => (
-              <div 
-                key={i}
-                className="flex items-start gap-2 bg-gray-800/50 p-3 rounded-lg border border-gray-700"
-              >
-                <span className="text-yellow-500 mt-0.5">•</span>
-                <span className="text-gray-300">{takeaway}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recommendations */}
-      <div className="mt-8">
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">Recommended Actions</h3>
-        <div className="grid md:grid-cols-3 gap-4">
-          {report.recommendations.map((rec: Recommendation, i: number) => (
-            <RecommendationCard key={i} recommendation={rec} index={i} />
-          ))}
-        </div>
-      </div>
-
-      {/* Next Steps */}
-      <div className="mt-8 p-6 bg-gray-800/50 border border-gray-700 rounded-xl">
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Next Steps</h3>
-        <div className="flex flex-wrap gap-3">
-          {report.nextSteps.map((step: string, i: number) => (
-            <span 
-              key={i}
-              className="px-4 py-2 bg-gray-700 rounded-lg border border-gray-600 hover:border-blue-500 transition-colors text-gray-300 text-sm"
-            >
-              {i+1}. {step}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Goal Tracker Modal */}
-      {showGoalTracker && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-2xl max-h-[80vh] overflow-y-auto bg-gray-900 rounded-2xl border border-gray-700 shadow-2xl">
-            <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">Goal Tracker</h2>
-              <button
-                onClick={() => setShowGoalTracker(false)}
-                className="text-gray-400 hover:text-white transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-6">
-              <GoalTracker 
-                userId={userId}
-                onGoalUpdate={() => {
-                  loadReport();
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-  );
+
+    {/* Next Steps */}
+    <div className="mt-8 p-6 bg-gray-800/50 border border-gray-700 rounded-xl">
+      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Next Steps</h3>
+      <div className="flex flex-wrap gap-3">
+        {report.nextSteps.map((step: string, i: number) => (
+          <span 
+            key={i}
+            className="px-4 py-2 bg-gray-700 rounded-lg border border-gray-600 hover:border-blue-500 transition-colors text-gray-300 text-sm"
+          >
+            {i+1}. {step}
+          </span>
+        ))}
+      </div>
+    </div>
+
+    {/* Goal Tracker Modal */}
+    {showGoalTracker && (
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="w-full max-w-2xl max-h-[80vh] overflow-y-auto bg-gray-900 rounded-2xl border border-gray-700 shadow-2xl">
+          <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex justify-between items-center">
+            <h2 className="text-xl font-bold text-white">Goal Tracker</h2>
+            <button
+              onClick={() => setShowGoalTracker(false)}
+              className="text-gray-400 hover:text-white transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="p-6">
+            <GoalTracker 
+              userId={userId}
+              onGoalUpdate={() => {
+                loadReport();
+              }}
+            />
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
 };
 
 // ===== CHART COMPONENT =====

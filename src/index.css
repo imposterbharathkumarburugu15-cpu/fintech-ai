@@ -644,6 +644,30 @@ body {
   }
 }
 
+@media print {
+  /* Hide elements with no-print class when printing */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Ensure the report content is visible */
+  #report-content {
+    background: #1a1a2e !important;
+    color: #ffffff !important;
+    padding: 20px !important;
+  }
+  
+  /* Fix chart rendering */
+  .recharts-wrapper {
+    width: 100% !important;
+    height: 300px !important;
+  }
+  .recharts-surface {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
+
 /* ============================================================
    ALERT SEVERITY BORDERS
    ============================================================ */
