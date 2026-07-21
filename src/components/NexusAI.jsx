@@ -332,7 +332,7 @@ export function NexusChat({ isOpen, onClose }) {
                     className="text-center mb-10"
                   >
                     <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 via-white to-purple-200 mb-4 tracking-tight">
-                      Good Morning, Maya
+                      Hey there!
                     </h1>
                     <p className="text-[#a1a1aa] text-[15px] max-w-sm mx-auto leading-relaxed">
                       I'm Nexus AI, your intelligent financial copilot. I help

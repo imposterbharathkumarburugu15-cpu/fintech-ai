@@ -573,7 +573,17 @@ body {
   border-radius: 10px !important;
   box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
 }
+/* src/index.css */
 
+.recharts-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.recharts-surface {
+  width: 100% !important;
+  height: 100% !important;
+}
 /* src/index.css */
 
 @media print {
@@ -634,6 +644,31 @@ body {
   }
 }
 
+/* src/index.css - Add at the end */
+
+@media print {
+  /* Hide elements with no-print class when printing */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Ensure the report content is visible */
+  #report-content {
+    background: #1a1a2e !important;
+    color: #ffffff !important;
+    padding: 20px !important;
+  }
+  
+  /* Fix chart rendering */
+  .recharts-wrapper {
+    width: 100% !important;
+    height: 300px !important;
+  }
+  .recharts-surface {
+    width: 100% !important;
+    height: 100% !important;
+  }
+}
 /* ============================================================
    ALERT SEVERITY BORDERS
    ============================================================ */
@@ -650,4 +685,33 @@ body {
   background: #27272a;
   color: #fff;
   border-color: #3f3f46;
+}
+
+/* src/index.css - Add these print styles */
+
+@media print {
+  /* Hide everything except the print container */
+  body * {
+    visibility: hidden !important;
+  }
+  #print-container, #print-container * {
+    visibility: visible !important;
+  }
+  #print-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    background: #1a1a2e !important;
+    color: #ffffff !important;
+    padding: 20px !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  /* Ensure charts render */
+  .recharts-wrapper {
+    width: 100% !important;
+    height: 300px !important;
+  }
 }

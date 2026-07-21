@@ -10,48 +10,53 @@ import { StockResearch } from "./components/StockResearch";
 import { PortfolioIntelligence } from "./components/PortfolioIntelligence";
 import { GoalPlanner } from "./components/GoalPlanner";
 import { ReportCenter } from "./components/ReportCenter";
-import { MarketIntelligence
- } from "./components/MarketIntelligence";
+import { MarketIntelligence } from "./components/MarketIntelligence";
 import { SmartAlerts } from "./components/SmartAlerts";
 import { Login } from "./components/Login";
-import { isSupabaseConfigured, supabase } from "./supabaseClient";
+import { supabase } from "./supabaseClient";
 import ReportViewer from './components/reports/ReportViewer';
-import { Session, User } from '@supabase/supabase-js'; // 👈 ADD THIS IMPORT
+
+type ViewType = "dashboard" | "expenses" | "stocks" | "portfolio" | "goals" | "reports" | "markets" | "alerts";
 
 function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
-  const [activeView, setActiveView] = useState("dashboard");
+  const [activeView, setActiveView] = useState<ViewType>("dashboard");
   const [selectedReportType, setSelectedReportType] = useState<string>("monthly");
-
-  // AUTH STATE - with proper types
-  const [session, setSession] = useState<Session | null>(null); // 👈 ADD TYPE
-  const [checking, setChecking] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) {
-      setChecking(false);
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized');
+      setLoading(false);
       return;
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setChecking(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setUser(session?.user || null);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('❌ Error getting session:', err);
+        setLoading(false);
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      setUser(session?.user || null);
+      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
-  // Handle view change
   const handleViewChange = (view: string) => {
-    setActiveView(view);
+    setActiveView(view as ViewType);
   };
 
-  // Handle PDF export
   const handleExport = (format: 'pdf' | 'excel'): void => {
     console.log(`Exporting report as ${format}`);
     alert(`${format.toUpperCase()} export coming soon!`);
@@ -71,11 +76,11 @@ function App() {
         return <GoalPlanner />;
       case "reports":
         return (
-          <div className="page-shell">
-            <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide pb-1">
+          <div className="p-4 md:p-6">
+            <div className="flex flex-wrap gap-2 mb-4">
               <button
                 onClick={() => setSelectedReportType("monthly")}
-                className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                   selectedReportType === "monthly"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
@@ -85,7 +90,7 @@ function App() {
               </button>
               <button
                 onClick={() => setSelectedReportType("expense")}
-                className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                   selectedReportType === "expense"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
@@ -95,7 +100,7 @@ function App() {
               </button>
               <button
                 onClick={() => setSelectedReportType("investment")}
-                className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                   selectedReportType === "investment"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
@@ -105,7 +110,7 @@ function App() {
               </button>
               <button
                 onClick={() => setSelectedReportType("health")}
-                className={`shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
                   selectedReportType === "health"
                     ? "bg-blue-600 text-white"
                     : "bg-gray-800 text-gray-400 hover:bg-gray-700"
@@ -113,13 +118,20 @@ function App() {
               >
                 Health Score
               </button>
-            </div>
+            </div>     
             
-            <ReportViewer 
-              userId={session?.user?.id || "demo-user"}
-              reportType={selectedReportType}
-              onExport={handleExport}
-            />
+            {user?.id ? (
+              <ReportViewer 
+                userId={user.id}
+                reportType={selectedReportType}
+                onExport={handleExport}
+              />
+            ) : (
+              <div className="p-8 text-center text-gray-400 bg-gray-800/50 rounded-xl border border-gray-700">
+                <p className="text-lg">Please login to view your financial report</p>
+                <p className="text-sm mt-2">Sign in to see personalized financial insights</p>
+              </div>
+            )}
           </div>
         );
       case "markets":
@@ -128,50 +140,38 @@ function App() {
           setActiveView("stocks");
         }} />;
       case "alerts":
-        return <SmartAlerts onViewChange={handleViewChange} onOpenStock={(symbol: string) => {
-          window.sessionStorage.setItem("finpilot-selected-stock", symbol);
-          setActiveView("stocks");
-        }} />;
+        // ✅ SmartAlerts takes NO props
+        return <SmartAlerts />;
       default:
         return <Dashboard onViewChange={setActiveView} onToggleChat={() => setIsChatOpen(true)} />;
     }
   };
 
-  // AUTH GATE
-  if (checking) {
+  // Show loading state
+  if (loading) {
     return (
-      <div className="min-h-screen w-full bg-[#040405] flex items-center justify-center text-[#71717a]">
-        Loading…
-      </div>
-    );
-  }
-
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="min-h-screen w-full bg-[#040405] p-6 text-white flex items-center justify-center">
-        <div className="w-full max-w-xl rounded-3xl border border-blue-400/20 bg-[#121214] p-8 shadow-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">FinPilot AI setup</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-tight">Add your Supabase settings to continue.</h1>
-          <p className="mt-3 leading-6 text-[#a1a1aa]">The app is running, but authentication needs a local <code className="rounded bg-white/5 px-1.5 py-0.5 text-blue-200">.env</code> file before it can load your workspace.</p>
-          <pre className="mt-6 overflow-x-auto rounded-2xl border border-[#27272a] bg-[#09090b] p-4 text-sm leading-7 text-[#d4d4d8]">VITE_SUPABASE_URL="https://your-project.supabase.co"{`\n`}VITE_SUPABASE_ANON_KEY="your-anon-key"{`\n`}VITE_FINNHUB_API_KEY="your-finnhub-key"</pre>
-          <p className="mt-5 text-sm text-[#71717a]">Save those values in <code>.env</code>, then restart the dev server.</p>
+      <div className="flex items-center justify-center h-screen w-full bg-[#040405]">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading...</p>
         </div>
       </div>
     );
   }
-  
-  if (!session) {
+
+  // If no user, show login
+  if (!user) {
     return <Login />;
   }
 
-  // LOGGED IN - MAIN APP
+  // Logged in - Main App
   return (
     <div className="flex flex-col h-screen w-full bg-[#040405] overflow-hidden text-[#fafafa] font-sans">
       <TopNav
         activeView={activeView}
         onViewChange={handleViewChange}
         onToggleChat={() => setIsChatOpen(true)}
-        user={session.user} // 👈 This is now properly typed as User
+        user={user}
       />
       <main className="flex-1 overflow-hidden relative">
         <div className="h-full overflow-y-auto scrollbar-hide relative bg-[#040405]">
