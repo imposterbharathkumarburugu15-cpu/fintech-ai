@@ -1,4 +1,3 @@
-// src/components/reports/ReportViewer.tsx
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -16,7 +15,7 @@ import ReportSkeleton from './ReportSkeleton';
 import { exportReportToPDF } from '../../services/pdfExportService';
 import { supabase, isSupabaseConfigured } from '../../supabaseClient';
 import GoalTracker from '../GoalTracker';
-import { Target, X } from 'lucide-react';
+import { Target, X, AlertTriangle, ShieldCheck, TrendingUp, TrendingDown, Info, Briefcase, Activity } from 'lucide-react';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1'];
 const RISK_DATA = [
@@ -28,9 +27,7 @@ const RISK_DATA = [
   { subject: "Systemic", A: 55, fullMark: 100 }
 ];
 
-// ===== TOOLTIP COMPONENTS =====
-
-// Custom tooltip for charts
+// ===== CUSTOM TOOLTIP =====
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -43,14 +40,14 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// ===== MAIN COMPONENT =====
-
+// ===== INTERFACE =====
 interface ReportViewerProps {
   userId?: string;
   reportType?: string;
   onExport?: (format: 'pdf' | 'excel') => void;
 }
 
+// ===== MAIN COMPONENT =====
 const ReportViewer: React.FC<ReportViewerProps> = ({ 
   userId = 'demo-user', 
   reportType = 'monthly',
@@ -64,34 +61,20 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [showGoalTracker, setShowGoalTracker] = useState<boolean>(false);
 
+  // ===== HELPER FUNCTIONS =====
+  const getTopCategory = (categories: Record<string, number>): string => {
+    const entries = Object.entries(categories);
+    if (entries.length === 0) return 'No categories';
+    return entries.sort((a, b) => b[1] - a[1])[0][0];
+  };
+
   // ===== LOAD REPORT =====
-  useEffect(() => {
-    loadReport();
-  }, [userId, reportType]);
-
-  useEffect(() => {
-    if (report) {
-      const timeout = setTimeout(() => {
-        const charts = document.querySelectorAll('.recharts-wrapper');
-        charts.forEach((chart: any) => {
-          if (chart.style) {
-            chart.style.width = '100%';
-            chart.style.height = '300px';
-            chart.style.display = 'block';
-            chart.style.visibility = 'visible';
-          }
-        });
-      }, 500);
-      return () => clearTimeout(timeout);
-    }
-  }, [report]);
-
-  // ===== LOAD REPORT FUNCTION =====
   const loadReport = async (): Promise<void> => {
     setLoading(true);
     setError(null);
     
     try {
+      // Check Supabase configuration
       if (!isSupabaseConfigured || !supabase) {
         setError('Supabase is not configured. Please check your environment variables.');
         setLoading(false);
@@ -100,6 +83,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
 
       let userIdToUse = userId;
       
+      // If userId is 'demo-user', try to get the actual user
       if (userId === 'demo-user') {
         try {
           const { data: { user } } = await supabase.auth.getUser();
@@ -118,11 +102,14 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         }
       }
 
+      // Fetch report data
       const data = await fetchReportData(userIdToUse);
       setReportData(data);
       
+      // Generate structured report
       const structuredReport = generateStructuredReport(data);
       
+      // Build full report
       const fullReport: GeneratedReport = {
         ...structuredReport,
         summary: generateSummary(data, reportType),
@@ -138,13 +125,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  // ===== GENERATE FUNCTIONS =====
-  const getTopCategory = (categories: Record<string, number>): string => {
-    const entries = Object.entries(categories);
-    if (entries.length === 0) return 'No categories';
-    return entries.sort((a, b) => b[1] - a[1])[0][0];
   };
 
   const generateSummary = (data: ReportData, type: string): string => {
@@ -223,111 +203,259 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
 
     switch(type) {
       case 'monthly':
-        // ===== MONTHLY REPORT =====
-        // 1. Spending Distribution with Legend
-        const pieData = Object.entries(data.expenses.byCategory).map(([name, value]) => ({
-          name,
-          value
-        }));
-
-        sections.push({
-          heading: 'Spending Distribution',
-          content: `Total monthly spending: ₹${data.expenses.total.toLocaleString()} across ${Object.keys(data.expenses.byCategory).length} categories. ${topCategory} is your highest expense at ${Math.round((data.expenses.byCategory[topCategory] / data.expenses.total) * 100)}% of total.`,
-          type: 'insight',
-          customComponent: (
-            <div className="mt-4">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    nameKey="name"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Legend 
-                    layout="vertical" 
-                    align="right" 
-                    verticalAlign="middle"
-                    formatter={(value) => <span style={{ color: '#d1d5db' }}>{value}</span>}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )
-        });
-
-        // 2. Monthly Spending Trend
-        if (data.expenses.monthlyTrend.length > 0) {
-          sections.push({
-            heading: 'Monthly Spending Trend',
-            content: `Your spending has ${currentMonth?.amount > previousMonth?.amount ? 'increased' : 'decreased'} over the past ${data.expenses.monthlyTrend.length} months. Current month: ₹${currentMonth?.amount.toLocaleString() || 0}.`,
-            type: 'insight',
-            chartData: data.expenses.monthlyTrend.map(m => ({ name: m.month, value: m.amount })),
-            chartType: 'line'
-          });
+      const CATEGORY_BENCHMARKS: Record<string, { max: number; suggestion: string; severity: 'low' | 'medium' | 'high' }> = {
+        'Food & Dining': {
+          max: 8000,
+          suggestion: 'Consider meal prepping and cooking at home. This could save you ₹{savings} per month.',
+          severity: 'high'
+        },
+        'Dining': {
+          max: 8000,
+          suggestion: 'Consider meal prepping and cooking at home. This could save you ₹{savings} per month.',
+          severity: 'high'
+        },
+        'Restaurants': {
+          max: 8000,
+          suggestion: 'Consider meal prepping and cooking at home. This could save you ₹{savings} per month.',
+          severity: 'high'
+        },
+        'Transportation': {
+          max: 5000,
+          suggestion: 'Consider carpooling, using public transport, or walking for short distances.',
+          severity: 'medium'
+        },
+        'Shopping': {
+          max: 6000,
+          suggestion: 'Try the 24-hour rule before making a purchase. Wait a day and ask if you really need it.',
+          severity: 'medium'
+        },
+        'Entertainment': {
+          max: 4000,
+          suggestion: 'Look for free or low-cost entertainment options like local parks, library events, or streaming bundles.',
+          severity: 'medium'
+        },
+        'Bills & Utilities': {
+          max: 8000,
+          suggestion: 'Check if you can reduce usage or switch to more efficient appliances. Every little bit helps!',
+          severity: 'low'
+        },
+        'Groceries': {
+          max: 10000,
+          suggestion: 'Plan your meals weekly, make a shopping list, and avoid buying on impulse.',
+          severity: 'medium'
+        },
+        'Healthcare': {
+          max: 5000,
+          suggestion: 'Consider a health insurance plan or medical loan for large expenses. Your health is important! 💚',
+          severity: 'low'
+        },
+        'Medical': {
+          max: 5000,
+          suggestion: 'Consider a health insurance plan or medical loan for large expenses. Your health is important! 💚',
+          severity: 'low'
+        },
+        'Education': {
+          max: 15000,
+          suggestion: 'Education is an investment in yourself! Consider scholarships, education loans, or EMI options.',
+          severity: 'low'
+        },
+        'Insurance': {
+          max: 10000,
+          suggestion: 'Insurance is essential protection. Review your coverage to make sure you\'re getting the best value.',
+          severity: 'low'
+        },
+        'Other': {
+          max: 3000,
+          suggestion: 'Review your miscellaneous expenses. Often, small amounts add up to big savings!',
+          severity: 'low'
         }
+      };
 
-        // 3. Profit & Loss - Using REAL income data
-        const totalIncome = data.expenses.monthlyTrend.length > 0 
-          ? Math.round(data.expenses.monthlyTrend[data.expenses.monthlyTrend.length - 1].amount * 1.25)
-          : 50000;
-        const totalExpenses = data.expenses.total || 0;
-        const netProfit = totalIncome - totalExpenses;
-        const isProfit = netProfit >= 0;
+      // Generate Reality Check
+      const realityCheck = Object.entries(data.expenses.byCategory)
+        .map(([category, amount]) => {
+          const benchmark = CATEGORY_BENCHMARKS[category] || CATEGORY_BENCHMARKS['Other'];
+          const isOver = amount > benchmark.max;
+          const savings = Math.round(amount - benchmark.max);
+          
+          return {
+            category,
+            amount,
+            benchmark: benchmark.max,
+            isOver,
+            savings: savings > 0 ? savings : 0,
+            suggestion: isOver 
+              ? benchmark.suggestion.replace('{savings}', savings.toLocaleString())
+              : null,
+            severity: isOver ? benchmark.severity : 'low'
+          };
+        })
+        .sort((a, b) => b.savings - a.savings);
 
-        sections.push({
-          heading: '📊 Profit & Loss Summary',
-          content: '',
-          type: 'insight',
-          customComponent: (
-            <div className="space-y-4 mt-2">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                  <p className="text-gray-400 text-sm">Total Income</p>
-                  <p className="text-green-400 text-2xl font-bold">₹{totalIncome.toLocaleString()}</p>
-                </div>
-                <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                  <p className="text-gray-400 text-sm">Total Expenses</p>
-                  <p className="text-red-400 text-2xl font-bold">₹{totalExpenses.toLocaleString()}</p>
-                </div>
-                <div className={`p-4 rounded-lg border ${isProfit ? 'border-green-800/30 bg-green-900/20' : 'border-red-800/30 bg-red-900/20'}`}>
-                  <p className="text-gray-400 text-sm">Net {isProfit ? 'Savings' : 'Loss'}</p>
-                  <p className={`text-2xl font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
-                    {isProfit ? '+' : '-'}₹{Math.abs(netProfit).toLocaleString()}
-                  </p>
-                </div>
-              </div>
+      // Separate overspending and on-track categories
+      const overSpending = realityCheck.filter(item => item.isOver);
+      const onTrack = realityCheck.filter(item => !item.isOver);
 
+      sections.push({
+        heading: '💡 Spending Reality Check',
+        content: '',
+        type: overSpending.length > 0 ? 'warning' : 'achievement',
+        customComponent: (
+          <div className="space-y-4 mt-2">
+            {/* Summary Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                <p className="text-gray-400 text-sm mb-3">Income vs Expenses</p>
-                <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={data.expenses.monthlyTrend.map((m: any) => ({
-                    name: m.month,
-                    income: Math.round(m.amount * 1.25),
-                    expenses: m.amount
-                  }))}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="name" stroke="#9CA3AF" />
-                    <YAxis stroke="#9CA3AF" tickFormatter={(value) => `₹${value.toLocaleString()}`} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Bar dataKey="income" fill="#10B981" name="Income" />
-                    <Bar dataKey="expenses" fill="#EF4444" name="Expenses" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <p className="text-gray-400 text-sm">Total Spent</p>
+                <p className="text-white text-2xl font-bold">₹{data.expenses.total.toLocaleString()}</p>
+              </div>
+              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                <p className="text-gray-400 text-sm">Categories Over Budget</p>
+                <p className={`text-2xl font-bold ${overSpending.length > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                  {overSpending.length}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                <p className="text-gray-400 text-sm">Potential Savings</p>
+                <p className={`text-2xl font-bold ${overSpending.length > 0 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  {overSpending.length > 0 ? `₹${overSpending.reduce((sum, item) => sum + item.savings, 0).toLocaleString()}` : '✅ On Track'}
+                </p>
               </div>
             </div>
-          )
-        });
+
+            {/* Overspending Categories */}
+            {overSpending.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-red-400 font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  Categories Needing Attention
+                </h4>
+                {overSpending.map((item, index) => (
+                  <div key={index} className={`p-4 rounded-lg border ${
+                    item.severity === 'high' ? 'bg-red-900/20 border-red-800/30' :
+                    item.severity === 'medium' ? 'bg-yellow-900/20 border-yellow-800/30' :
+                    'bg-blue-900/20 border-blue-800/30'
+                  }`}>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-semibold">{item.category}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                            item.severity === 'high' ? 'bg-red-900/50 text-red-400' :
+                            item.severity === 'medium' ? 'bg-yellow-900/50 text-yellow-400' :
+                            'bg-blue-900/50 text-blue-400'
+                          }`}>
+                            {item.severity === 'high' ? 'High Priority' :
+                            item.severity === 'medium' ? 'Medium Priority' :
+                            'Review'}
+                          </span>
+                        </div>
+                        <div className="flex gap-4 mt-1 text-sm">
+                          <span className="text-gray-400">Spent: ₹{item.amount.toLocaleString()}</span>
+                          <span className="text-gray-400">Budget: ₹{item.benchmark.toLocaleString()}</span>
+                          <span className="text-red-400 font-semibold">Over: ₹{item.savings.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="w-full md:w-48 h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${item.severity === 'high' ? 'bg-red-500' : 'bg-yellow-500'}`}
+                          style={{ width: `${Math.min((item.amount / item.benchmark) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Suggestion with emoji based on category */}
+                    <div className="mt-2 p-2 bg-gray-800/50 rounded-lg">
+                      <p className="text-sm text-gray-300">
+                        💡 {item.suggestion}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* On Track Categories */}
+            {onTrack.length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-green-400 font-semibold flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4" />
+                  Categories On Track
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
+                  {onTrack.slice(0, 6).map((item, index) => (
+                    <div key={index} className="bg-green-900/10 border border-green-800/30 rounded-lg p-2 text-center">
+                      <p className="text-gray-300 text-sm">{item.category}</p>
+                      <p className="text-green-400 font-semibold">₹{item.amount.toLocaleString()}</p>
+                      <p className="text-xs text-gray-500">Budget: ₹{item.benchmark.toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Health/Education Special Message */}
+            {overSpending.some(item => 
+              item.category.toLowerCase().includes('health') || 
+              item.category.toLowerCase().includes('medical') ||
+              item.category.toLowerCase().includes('education')
+            ) && (
+              <div className="p-4 rounded-lg bg-blue-900/20 border border-blue-800/30">
+                <h4 className="text-blue-400 font-semibold mb-2">📚 Health & Education Expenses</h4>
+                <p className="text-sm text-gray-300">
+                  We noticed spending on health or education. These are important investments in yourself!
+                  Consider exploring:
+                </p>
+                <ul className="mt-2 space-y-1 text-sm text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400">•</span>
+                    <span>Health insurance plans for medical expenses</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400">•</span>
+                    <span>Education loans with low interest rates</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-400">•</span>
+                    <span>EMI options for large medical or education bills</span>
+                  </li>
+                </ul>
+              </div>
+            )}
+
+            {/* Saving Tips */}
+            {overSpending.length > 0 && (
+              <div className="p-4 rounded-lg bg-yellow-900/20 border border-yellow-800/30">
+                <h4 className="text-yellow-400 font-semibold mb-2">💰 Quick Saving Tips</h4>
+                <ul className="space-y-1.5 text-sm text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-400">•</span>
+                    <span>Track every expense for 30 days to build awareness</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-400">•</span>
+                    <span>Set up automatic savings transfer on payday</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-400">•</span>
+                    <span>Use the 50/30/20 rule: 50% needs, 30% wants, 20% savings</span>
+                  </li>
+                </ul>
+              </div>
+            )}
+
+            {/* If everything is on track */}
+            {overSpending.length === 0 && (
+              <div className="p-4 rounded-lg bg-green-900/20 border border-green-800/30 text-center">
+                <h4 className="text-green-400 font-semibold mb-2">🌟 Excellent Financial Management!</h4>
+                <p className="text-sm text-gray-300">
+                  You're staying within budget across all categories. Keep up the great work!
+                  Your disciplined approach is building a strong financial foundation.
+                </p>
+              </div>
+            )}
+          </div>
+        )
+      });
         break;
 
       case 'investment':
@@ -502,9 +630,242 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         });
         break;
 
+
       case 'expense':
         // ===== EXPENSE ANALYSIS =====
-        // ... existing expense analysis code with Executive Summary ...
+        const savingsDifference = previousMonth?.amount 
+          ? ((currentMonth?.amount - previousMonth?.amount) / previousMonth?.amount * 100) 
+          : 0;
+        const isSavingMore = savingsDifference < 0;
+
+        // 1. Monthly Savings Analysis
+        sections.push({
+          heading: 'Monthly Savings Analysis',
+          content: '',
+          type: isSavingMore ? 'achievement' : 'warning',
+          customComponent: (
+            <div className="space-y-4 mt-2">
+              <div className={`p-4 rounded-lg border ${isSavingMore ? 'border-green-800/30 bg-green-900/20' : 'border-yellow-800/30 bg-yellow-900/20'}`}>
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div>
+                    <p className="text-gray-400 text-sm">This Month</p>
+                    <p className="text-white text-2xl font-bold">₹{currentMonth?.amount.toLocaleString() || 0}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-gray-400 text-sm">vs Last Month</p>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${isSavingMore ? 'bg-green-900/50 text-green-400' : 'bg-red-900/50 text-red-400'}`}>
+                        {isSavingMore ? `↓ ${Math.abs(savingsDifference).toFixed(1)}%` : `↑ ${Math.abs(savingsDifference).toFixed(1)}%`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-left md:text-right">
+                    <p className="text-gray-400 text-sm">What This Means</p>
+                    <p className="text-gray-300 text-sm mt-1">
+                      {isSavingMore 
+                        ? `🎉 You spent ₹${(previousMonth?.amount - currentMonth?.amount).toLocaleString()} less than last month! That's ₹${Math.round((previousMonth?.amount - currentMonth?.amount) / 30).toLocaleString()} per day saved.`
+                        : `💰 You spent ₹${(currentMonth?.amount - previousMonth?.amount).toLocaleString()} more than last month. That's about ₹${Math.round((currentMonth?.amount - previousMonth?.amount) / 30).toLocaleString()} extra per day.`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Savings Rate */}
+              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div>
+                    <p className="text-gray-400 text-sm">Your Savings Rate</p>
+                    <p className={`text-2xl font-bold ${savingsRate >= 20 ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {savingsRate}%
+                    </p>
+                  </div>
+                  <div className="flex-1">
+                    <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all ${savingsRate >= 20 ? 'bg-green-400' : 'bg-yellow-400'}`}
+                        style={{ width: `${Math.min(savingsRate, 100)}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-2">
+                      {savingsRate >= 20 
+                        ? "🌟 Excellent! You're saving above the recommended 20% target." 
+                        : savingsRate >= 15
+                        ? "💪 Good progress! You're close to the 20% target."
+                        : savingsRate >= 10
+                        ? "📈 You're on your way. Try to increase your savings rate."
+                        : "🌱 Let's work on building your savings. Every little bit helps!"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )
+        });
+
+        // 2. Top Spending Insights
+        sections.push({
+          heading: 'Where Your Money Goes',
+          content: '',
+          type: 'insight',
+          customComponent: (
+            <div className="space-y-3 mt-2">
+              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                <p className="text-gray-400 text-sm mb-3">Your Top 5 Spending Categories</p>
+                <div className="space-y-2">
+                  {Object.entries(data.expenses.byCategory)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 5)
+                    .map(([category, amount], index) => {
+                      const percentage = data.expenses.total > 0 ? Math.round((amount / data.expenses.total) * 100) : 0;
+                      const colors = ['bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500'];
+                      return (
+                        <div key={category} className="flex items-center gap-3">
+                          <span className="text-gray-400 text-sm w-8">{index + 1}.</span>
+                          <div className="flex-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-300">{category}</span>
+                              <span className="text-gray-400">₹{amount.toLocaleString()} ({percentage}%)</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-gray-700 rounded-full overflow-hidden mt-0.5">
+                              <div 
+                                className={`h-full rounded-full ${colors[index % colors.length]}`}
+                                style={{ width: `${percentage}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* Smart insight about top category */}
+              {data.expenses.byCategory[topCategory] > data.expenses.total * 0.3 && (
+                <div className="bg-blue-900/20 border border-blue-800/30 rounded-lg p-4">
+                  <p className="text-blue-300 text-sm">
+                    💡 <strong>{topCategory}</strong> makes up <strong>{Math.round((data.expenses.byCategory[topCategory] / data.expenses.total) * 100)}%</strong> of your total spending. 
+                    {topCategory === 'Food & Dining' && " Consider meal prepping or cooking at home more often to save money."}
+                    {topCategory === 'Shopping' && " Try waiting 24 hours before making a purchase to avoid impulse buys."}
+                    {topCategory === 'Transportation' && " Consider carpooling or using public transport occasionally."}
+                    {topCategory === 'Entertainment' && " Look for free or low-cost entertainment options in your area."}
+                  </p>
+                </div>
+              )}
+            </div>
+          )
+        });
+
+        // 3. Unusual Spending
+        if (data.expenses.unusualSpending.length > 0) {
+          sections.push({
+            heading: "Let's Review These Expenses",
+            content: 'We noticed some unusual transactions. Let\'s review them together:',
+            type: 'warning',
+            customComponent: (
+              <div className="space-y-3 mt-2">
+                {data.expenses.unusualSpending.map((transaction: any, index: number) => (
+                  <div key={index} className="bg-red-900/10 border border-red-800/30 rounded-lg p-4">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                      <div>
+                        <p className="text-white font-medium">{transaction.description}</p>
+                        <p className="text-gray-400 text-sm">{transaction.date}</p>
+                      </div>
+                      <div className="text-left md:text-right">
+                        <p className="text-red-400 font-bold">₹{transaction.amount.toLocaleString()}</p>
+                        <p className="text-xs text-yellow-400">This seems unusual</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 p-2 bg-yellow-900/10 border border-yellow-800/30 rounded-lg">
+                      <p className="text-xs text-yellow-300">
+                        💡 This is {Math.round(transaction.amount / (data.expenses.total / Math.max(data.expenses.unusualSpending.length, 1)))}x higher than your typical spending. 
+                        {transaction.amount > 10000 && " Consider if this was a planned purchase or an impulse buy."}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          });
+        }
+
+        // 4. Friendly Suggestions
+        sections.push({
+          heading: 'Friendly Suggestions',
+          content: '',
+          type: 'insight',
+          customComponent: (
+            <div className="space-y-3 mt-2">
+              {savingsRate < 20 && (
+                <div className="bg-blue-900/20 border border-blue-800/30 rounded-lg p-4">
+                  <h4 className="text-blue-400 font-semibold mb-2">🌱 Grow Your Savings</h4>
+                  <p className="text-sm text-gray-300 mb-2">
+                    You're saving {savingsRate}% of your income. Here's how we can reach the 20% target together:
+                  </p>
+                  <ul className="space-y-1.5 text-sm text-gray-300">
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-400 mt-0.5">•</span>
+                      <span>Set up an automatic transfer of ₹{Math.round(data.expenses.total * 0.02)} (2% of your spending) to savings each month</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-blue-400 mt-0.5">•</span>
+                      <span>Try reducing <strong className="text-white">{topCategory}</strong> spending by just 5% - that would save ₹{Math.round(data.expenses.byCategory[topCategory] * 0.05).toLocaleString()} per month!</span>
+                    </li>
+                  </ul>
+                </div>
+              )}
+
+              {data.expenses.recurringPayments.length > 0 && (
+                <div className="bg-purple-900/20 border border-purple-800/30 rounded-lg p-4">
+                  <h4 className="text-purple-400 font-semibold mb-2">📋 Subscription Check</h4>
+                  <p className="text-sm text-gray-300 mb-2">
+                    You have {data.expenses.recurringPayments.length} recurring payments. Let's make sure you're getting value:
+                  </p>
+                  <ul className="space-y-1 text-sm text-gray-300">
+                    {data.expenses.recurringPayments.slice(0, 4).map((payment: any, i: number) => (
+                      <li key={i} className="flex justify-between items-center border-b border-gray-700/50 pb-1 last:border-0">
+                        <span>{payment.name}</span>
+                        <span className="text-gray-400">₹{payment.amount.toLocaleString()}/month</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-gray-400 mt-2">
+                    💡 Consider reviewing these subscriptions. Even saving ₹500/month adds up to ₹6,000/year!
+                  </p>
+                </div>
+              )}
+
+              <div className="bg-green-900/20 border border-green-800/30 rounded-lg p-4">
+                <h4 className="text-green-400 font-semibold mb-2">🌟 Small Habits, Big Results</h4>
+                <ul className="space-y-1.5 text-sm text-gray-300">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-0.5">✓</span>
+                    <span>Track your daily spending - awareness is the first step to saving</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-0.5">✓</span>
+                    <span>Try the 30-day rule: wait 30 days before making any purchase above ₹5,000</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-400 mt-0.5">✓</span>
+                    <span>Celebrate small wins - every ₹100 saved is a step toward your goals!</span>
+                  </li>
+                </ul>
+              </div>
+
+              {savingsRate >= 20 && data.expenses.unusualSpending.length === 0 && data.expenses.recurringPayments.length === 0 && (
+                <div className="bg-green-900/20 border border-green-800/30 rounded-lg p-4 text-center">
+                  <h4 className="text-green-400 font-semibold mb-2">🌟 You're Doing Amazing!</h4>
+                  <p className="text-sm text-gray-300">
+                    You're saving {savingsRate}% of your income, no unusual spending detected, and you're managing your subscriptions well. 
+                    Keep up the great work! 🎉
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    💡 Next step: Consider investing your savings to grow your wealth.
+                  </p>
+                </div>
+              )}
+            </div>
+          )
+        });
+  break;
         break;
 
       default:
