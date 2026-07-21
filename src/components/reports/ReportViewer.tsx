@@ -1261,6 +1261,8 @@ useEffect(() => {
     );
   }
 
+// src/components/reports/ReportViewer.tsx
+
 return (
   <div id="report-content" className="max-w-7xl mx-auto p-4 md:p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl shadow-2xl">
     {/* Header */}
@@ -1297,22 +1299,26 @@ return (
           Goals
         </button>
         
-        <button 
-          onClick={() => handleExport('pdf')}
-          disabled={isExporting}
-          className={`flex-1 md:flex-none justify-center px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
-            isExporting 
-              ? 'bg-gray-600 cursor-not-allowed' 
-              : 'bg-blue-600 hover:bg-blue-700'
-          } text-white`}
-        >
-          {isExporting ? 'Exporting...' : 'Export PDF'}
-        </button>
+        {/* ✅ Only show PDF Export for Expense Analysis */}
+        {reportType === 'expense' && (
+          <button 
+            onClick={() => handleExport('pdf')}
+            disabled={isExporting}
+            className={`flex-1 md:flex-none justify-center px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+              isExporting 
+                ? 'bg-gray-600 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            } text-white`}
+          >
+            {isExporting ? 'Exporting...' : '📄 Export PDF'}
+          </button>
+        )}
+        
         <button 
           onClick={() => handleExport('excel')}
           className="flex-1 md:flex-none justify-center px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors flex items-center gap-2"
         >
-          Export Excel
+          📊 Export Excel
         </button>
       </div>
     </div>
