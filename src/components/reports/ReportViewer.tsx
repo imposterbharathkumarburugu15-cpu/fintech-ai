@@ -1,5 +1,6 @@
 // src/components/reports/ReportViewer.tsx
 
+
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
@@ -12,7 +13,9 @@ import { generateStructuredReport, calculateSavingsRate, calculateDiversificatio
 import RecommendationCard from './RecommendationCard';
 import ReportSkeleton from './ReportSkeleton';
 import { exportReportToPDF } from '../../services/pdfExportService';
-import { supabase } from '../../supabaseClient';
+import { supabase, isSupabaseConfigured } from '../../supabaseClient';  // ✅ FIXED
+import GoalTracker from '../GoalTracker';
+import { Target, X } from 'lucide-react';
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316', '#14B8A6', '#6366F1'];
 
@@ -219,65 +222,7 @@ const InvestmentCard: React.FC<{ holding: any }> = ({ holding }) => {
   );
 };
 
-// 5. Goal Progress Tracker
-const GoalTracker: React.FC<{ goal: any; savingsRate: number }> = ({ goal, savingsRate }) => {
-  const remainingAmount = goal.target * (100 - goal.progress) / 100;
-  const monthlySavings = (goal.target * 0.05);
-  const monthsToGoal = remainingAmount > 0 ? Math.ceil(remainingAmount / monthlySavings) : 0;
-  
-  return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-5">
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <p className="text-white font-semibold">{goal.name}</p>
-          <p className="text-gray-400 text-sm">Target: ₹{goal.target.toLocaleString()}</p>
-        </div>
-        <div className="bg-blue-600/20 px-3 py-1 rounded-full">
-          <span className="text-blue-400 text-sm font-medium">{goal.progress}%</span>
-        </div>
-      </div>
-      
-      <div className="relative w-full h-3 bg-gray-700 rounded-full overflow-hidden">
-        <motion.div 
-          className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
-          initial={{ width: 0 }}
-          animate={{ width: `${goal.progress}%` }}
-          transition={{ duration: 1, ease: "easeOut" }}
-        />
-      </div>
-      
-      <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-        <div>
-          <p className="text-gray-400">Saved</p>
-          <p className="text-white font-medium">₹{(goal.target * goal.progress / 100).toLocaleString()}</p>
-        </div>
-        <div>
-          <p className="text-gray-400">Remaining</p>
-          <p className="text-white font-medium">₹{remainingAmount.toLocaleString()}</p>
-        </div>
-        <div>
-          <p className="text-gray-400">Monthly Savings Rate</p>
-          <p className="text-green-400 font-medium">{savingsRate}%</p>
-        </div>
-        <div>
-          <p className="text-gray-400">Estimated Completion</p>
-          <p className="text-blue-400 font-medium">{monthsToGoal > 0 ? `${monthsToGoal} months` : 'Achieved'}</p>
-        </div>
-      </div>
-      
-      {monthsToGoal > 0 && (
-        <div className="mt-3 p-3 bg-blue-600/10 border border-blue-800/30 rounded-lg">
-          <p className="text-sm text-blue-300">
-            At your current savings rate, you will reach this goal in {monthsToGoal} months.
-            {savingsRate < 20 && ' Increasing your savings rate to 20% would accelerate this timeline.'}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// 6. Subscription Usage Chart
+// 5. Subscription Usage Chart
 const SubscriptionChart: React.FC<{ subscriptions: any[] }> = ({ subscriptions }) => {
   const data = subscriptions.map(sub => ({
     name: sub.name,
@@ -328,79 +273,7 @@ const SubscriptionChart: React.FC<{ subscriptions: any[] }> = ({ subscriptions }
   );
 };
 
-// 7. Dropdown Recommendation Card
-const ExpandableRecommendation: React.FC<{ recommendation: any; index: number }> = ({ recommendation, index }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  return (
-    <div className="bg-gray-800/50 border border-gray-700 rounded-xl overflow-hidden">
-      <div 
-        className="p-4 cursor-pointer hover:bg-gray-700/50 transition-colors flex justify-between items-center"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-            {index + 1}
-          </div>
-          <div>
-            <h4 className="font-semibold text-gray-200">{recommendation.action}</h4>
-            <p className="text-sm text-gray-400">{recommendation.why}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded-full">
-            {recommendation.impact}
-          </span>
-          <svg 
-            className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </div>
-      
-      {isExpanded && (
-        <motion.div 
-          className="p-4 border-t border-gray-700 bg-gray-900/30"
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          transition={{ duration: 0.3 }}
-        >
-          <div className="space-y-3">
-            <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide">Analysis</p>
-              <p className="text-gray-300 text-sm mt-1">
-                Based on your spending patterns and financial goals, this recommendation will help optimize your finances.
-              </p>
-            </div>
-            
-            <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide">Better Options</p>
-              <ul className="text-sm text-gray-300 mt-1 space-y-1">
-                <li className="flex items-start gap-2">
-                  <span className="text-green-400 mt-0.5">•</span>
-                  <span>Maintain your current strategy for optimal results</span>
-                </li>
-              </ul>
-            </div>
-            
-            <div>
-              <p className="text-xs text-gray-400 uppercase tracking-wide">Coupons & Offers</p>
-              <div className="flex flex-wrap gap-2 mt-1">
-                <span className="px-3 py-1 bg-gray-700 rounded-full text-xs text-gray-400">
-                  No active coupons found
-                </span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </div>
-  );
-};
-
-// 8. Unusual Transactions Card
+// 6. Unusual Transactions Card
 const UnusualTransactionsCard: React.FC<{ transactions: any[] }> = ({ transactions }) => {
   return (
     <div className="space-y-3">
@@ -441,6 +314,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const [activeSection, setActiveSection] = useState<number | null>(null);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [showGoalTracker, setShowGoalTracker] = useState<boolean>(false);
 
   // ===== LOAD REPORT =====
   useEffect(() => {
@@ -474,15 +348,27 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   }, [report]);
 
   // ===== LOAD REPORT FUNCTION =====
-  const loadReport = async (): Promise<void> => {
-    setLoading(true);
-    setError(null);
+  // src/components/reports/ReportViewer.tsx
+
+// In the loadReport function, update the code:
+
+const loadReport = async (): Promise<void> => {
+  setLoading(true);
+  setError(null);
+  
+  try {
+    // ✅ Check if Supabase is configured and available
+    if (!isSupabaseConfigured || !supabase) {
+      setError('Supabase is not configured. Please check your environment variables.');
+      setLoading(false);
+      return;
+    }
+
+    let userIdToUse = userId;
     
-    try {
-      let userIdToUse = userId;
-      
-      // If userId is 'demo-user', try to get the actual user
-      if (userId === 'demo-user') {
+    if (userId === 'demo-user') {
+      // ✅ Safe check before calling supabase.auth
+      if (supabase && supabase.auth) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           userIdToUse = user.id;
@@ -491,29 +377,34 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           setLoading(false);
           return;
         }
+      } else {
+        setError('Authentication service unavailable');
+        setLoading(false);
+        return;
       }
-
-      const data = await fetchReportData(userIdToUse);
-      setReportData(data);
-      
-      const structuredReport = generateStructuredReport(data);
-      
-      const fullReport: GeneratedReport = {
-        ...structuredReport,
-        summary: generateSummary(data, reportType),
-        keyTakeaways: generateKeyTakeaways(data, reportType),
-        recommendations: generateRecommendations(data, reportType),
-        sections: generateSections(data, reportType)
-      };
-      
-      setReport(fullReport);
-    } catch (error: any) {
-      console.error('Error loading report:', error);
-      setError(error.message || 'Failed to load report data. Please try again.');
-    } finally {
-      setLoading(false);
     }
-  };
+
+    const data = await fetchReportData(userIdToUse);
+    setReportData(data);
+    
+    const structuredReport = generateStructuredReport(data);
+    
+    const fullReport: GeneratedReport = {
+      ...structuredReport,
+      summary: generateSummary(data, reportType),
+      keyTakeaways: generateKeyTakeaways(data, reportType),
+      recommendations: generateRecommendations(data, reportType),
+      sections: generateSections(data, reportType)
+    };
+    
+    setReport(fullReport);
+  } catch (error: any) {
+    console.error('Error loading report:', error);
+    setError(error.message || 'Failed to load report data. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ===== GENERATE FUNCTIONS =====
   const getTopCategory = (categories: Record<string, number>): string => {
@@ -605,7 +496,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           : 0;
         const isSavingMore = savingsDifference < 0;
 
-        // 1. Spending Pattern Analysis
         sections.push({
           heading: 'Your Spending Pattern',
           content: '',
@@ -673,7 +563,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           )
         });
 
-        // 2. Top Spending Insights
         sections.push({
           heading: 'Where Your Money Goes',
           content: '',
@@ -713,7 +602,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           )
         });
 
-        // 3. Unusual Spending
         if (data.expenses.unusualSpending.length > 0) {
           sections.push({
             heading: "Let's Review These Expenses",
@@ -746,7 +634,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           });
         }
 
-        // 4. Friendly Suggestions
         sections.push({
           heading: 'Friendly Suggestions',
           content: '',
@@ -825,7 +712,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         break;
 
       default:
-        // Default sections for other report types
         sections.push({
           heading: 'Spending Distribution',
           content: `Total monthly spending: ₹${data.expenses.total.toLocaleString()} across ${Object.keys(data.expenses.byCategory).length} categories.`,
@@ -940,6 +826,15 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
         </div>
         
         <div className="flex flex-wrap gap-2 w-full md:w-auto">
+          {/* ✅ GOAL TRACKER BUTTON */}
+          <button 
+            onClick={() => setShowGoalTracker(true)}
+            className="flex-1 md:flex-none justify-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+          >
+            <Target className="w-4 h-4" />
+            Goals
+          </button>
+          
           <button 
             onClick={() => handleExport('pdf')}
             disabled={isExporting}
@@ -1071,6 +966,31 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
           ))}
         </div>
       </div>
+
+      {/* ✅ GOAL TRACKER MODAL */}
+      {showGoalTracker && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-2xl max-h-[80vh] overflow-y-auto bg-gray-900 rounded-2xl border border-gray-700 shadow-2xl">
+            <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-white">Goal Tracker</h2>
+              <button
+                onClick={() => setShowGoalTracker(false)}
+                className="text-gray-400 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <GoalTracker 
+                userId={userId}
+                onGoalUpdate={() => {
+                  loadReport();
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

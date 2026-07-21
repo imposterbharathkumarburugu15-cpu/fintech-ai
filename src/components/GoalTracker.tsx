@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase, isSupabaseConfigured } from '../supabaseClient';
-import { X, Plus, Target, TrendingUp, Calendar, CheckCircle } from 'lucide-react';
+import { X, Plus, Target, CheckCircle } from 'lucide-react';
 
 interface Goal {
   id: string;
@@ -23,20 +23,17 @@ const GoalTracker: React.FC<GoalTrackerProps> = ({ userId, onGoalUpdate }) => {
   const [showModal, setShowModal] = useState(false);
   const [newGoal, setNewGoal] = useState({ name: '', target_amount: 0 });
   const [error, setError] = useState<string | null>(null);
-  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
   useEffect(() => {
     if (userId && supabase && isSupabaseConfigured) {
       fetchGoals();
     } else {
       setLoading(false);
-      setError('Supabase not configured. Please check your connection.');
     }
   }, [userId]);
 
   const fetchGoals = async () => {
     if (!supabase || !isSupabaseConfigured) {
-      setError('Supabase not configured');
       setLoading(false);
       return;
     }
@@ -100,10 +97,7 @@ const GoalTracker: React.FC<GoalTrackerProps> = ({ userId, onGoalUpdate }) => {
   };
 
   const handleUpdateProgress = async (goalId: string, progress: number) => {
-    if (!supabase || !isSupabaseConfigured) {
-      setError('Supabase not configured');
-      return;
-    }
+    if (!supabase || !isSupabaseConfigured) return;
 
     try {
       const { error } = await supabase
@@ -124,10 +118,7 @@ const GoalTracker: React.FC<GoalTrackerProps> = ({ userId, onGoalUpdate }) => {
   };
 
   const handleDeleteGoal = async (goalId: string) => {
-    if (!supabase || !isSupabaseConfigured) {
-      setError('Supabase not configured');
-      return;
-    }
+    if (!supabase || !isSupabaseConfigured) return;
 
     if (!confirm('Are you sure you want to delete this goal?')) return;
 
@@ -147,20 +138,6 @@ const GoalTracker: React.FC<GoalTrackerProps> = ({ userId, onGoalUpdate }) => {
     }
   };
 
-  const getProgressColor = (progress: number) => {
-    if (progress >= 80) return 'text-green-400';
-    if (progress >= 50) return 'text-blue-400';
-    if (progress >= 30) return 'text-yellow-400';
-    return 'text-red-400';
-  };
-
-  const getProgressBarColor = (progress: number) => {
-    if (progress >= 80) return 'bg-green-400';
-    if (progress >= 50) return 'bg-blue-400';
-    if (progress >= 30) return 'bg-yellow-400';
-    return 'bg-red-400';
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -169,17 +146,8 @@ const GoalTracker: React.FC<GoalTrackerProps> = ({ userId, onGoalUpdate }) => {
     );
   }
 
-  if (!isSupabaseConfigured) {
-    return (
-      <div className="bg-gray-800/50 rounded-xl border border-gray-700 p-6 text-center">
-        <p className="text-gray-400">Supabase not configured. Please set up your environment variables.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-gray-900 rounded-xl border border-gray-700 p-6">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
@@ -199,14 +167,12 @@ const GoalTracker: React.FC<GoalTrackerProps> = ({ userId, onGoalUpdate }) => {
         </button>
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="mb-4 p-3 bg-red-900/20 border border-red-800/30 rounded-lg">
           <p className="text-red-400 text-sm">{error}</p>
         </div>
       )}
 
-      {/* Goals List */}
       {goals.length === 0 ? (
         <div className="text-center py-12">
           <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-800 flex items-center justify-center">
@@ -250,13 +216,13 @@ const GoalTracker: React.FC<GoalTrackerProps> = ({ userId, onGoalUpdate }) => {
                     <div className="mt-2">
                       <div className="flex justify-between text-sm mb-1">
                         <span className="text-gray-400">Progress</span>
-                        <span className={`font-medium ${getProgressColor(progress)}`}>
+                        <span className="font-medium text-blue-400">
                           {Math.round(progress)}%
                         </span>
                       </div>
                       <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all ${getProgressBarColor(progress)}`}
+                          className="h-full rounded-full transition-all bg-blue-500"
                           style={{ width: `${Math.min(progress, 100)}%` }}
                         />
                       </div>
@@ -265,13 +231,9 @@ const GoalTracker: React.FC<GoalTrackerProps> = ({ userId, onGoalUpdate }) => {
                       <span className="text-gray-500">
                         Remaining: ₹{Math.round(remaining).toLocaleString()}
                       </span>
-                      <span className="text-gray-500">
-                        {achieved ? '✅ Completed' : `${Math.round((100 - progress) / 5)} months to go`}
-                      </span>
                     </div>
                   </div>
 
-                  {/* Progress Slider */}
                   <div className="flex flex-col items-end gap-2 ml-4">
                     <input
                       type="range"
@@ -303,7 +265,6 @@ const GoalTracker: React.FC<GoalTrackerProps> = ({ userId, onGoalUpdate }) => {
         </div>
       )}
 
-      {/* Add Goal Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-gray-900 rounded-2xl border border-gray-700 p-6 max-w-md w-full mx-4">
