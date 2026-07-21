@@ -553,6 +553,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
       break;
     }
 
+    
     case 'expense': {
       // ===== EXPENSE ANALYSIS - TEXT-ONLY SUMMARY =====
       
