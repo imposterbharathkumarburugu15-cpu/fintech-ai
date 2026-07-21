@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { ReportRenderer } from './ReportRenderer'; 
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, CartesianGrid, LineChart, Line,
@@ -41,12 +42,188 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+// ===== REPORT CHARTS COMPONENT =====
+const ReportCharts: React.FC<{ data: any; chartType: 'pie' | 'bar' | 'line' }> = ({ data, chartType }) => {
+  let chartData = [];
+  if (Array.isArray(data)) {
+    chartData = data.map(item => ({ ...item }));
+  } else {
+    chartData = Object.entries(data).map(([name, value]) => ({ name, value: typeof value === 'number' ? value : 0 }));
+  }
+
+  if (chartType === 'pie') {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie 
+            data={chartData} 
+            cx="50%" 
+            cy="50%" 
+            labelLine={true}
+            label={(entry: any) => {
+              const total = chartData.reduce((s: number, i: any) => s + i.value, 0);
+              const percentage = total > 0 ? ((entry.value / total) * 100) : 0;
+              return `${entry.name} (${percentage.toFixed(0)}%)`;
+            }}
+            outerRadius={80} 
+            fill="#8884d8" 
+            dataKey="value" 
+            nameKey="name"
+          >
+            {chartData.map((entry: any, index: number) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+        </PieChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  if (chartType === 'line') {
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+          <XAxis dataKey="name" stroke="#9CA3AF" />
+          <YAxis stroke="#9CA3AF" tickFormatter={(value) => `₹${value.toLocaleString()}`} />
+          <Tooltip content={<CustomTooltip />} />
+          <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={chartData}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+        <XAxis dataKey="name" stroke="#9CA3AF" />
+        <YAxis stroke="#9CA3AF" tickFormatter={(value) => `₹${value.toLocaleString()}`} />
+        <Tooltip content={<CustomTooltip />} />
+        <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]}>
+          {chartData.map((entry: any, index: number) => (
+            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+};
+
 // ===== INTERFACE =====
 interface ReportViewerProps {
   userId?: string;
   reportType?: string;
   onExport?: (format: 'pdf' | 'excel') => void;
 }
+
+// ===== GENERATE SECTIONS FUNCTION =====
+const generateSections = (data: ReportData, type: string): any[] => {
+  const sections: any[] = [];
+  const topCategory = getTopCategory(data.expenses.byCategory);
+  const savingsRate = calculateSavingsRate(data);
+  const currentMonth = data.expenses.monthlyTrend[data.expenses.monthlyTrend.length - 1];
+  const previousMonth = data.expenses.monthlyTrend[data.expenses.monthlyTrend.length - 2] || data.expenses.monthlyTrend[0];
+
+  switch(type) {
+    case 'monthly': {
+      // Monthly Report - Reality Check
+      const CATEGORY_BENCHMARKS: Record<string, { max: number; suggestion: string; severity: 'low' | 'medium' | 'high' }> = {
+        'Food & Dining': { max: 8000, suggestion: 'Consider meal prepping and cooking at home. This could save you ₹{savings} per month.', severity: 'high' },
+        'Transportation': { max: 5000, suggestion: 'Consider carpooling, using public transport, or walking for short distances.', severity: 'medium' },
+        'Shopping': { max: 6000, suggestion: 'Try the 24-hour rule before making a purchase. Wait a day and ask if you really need it.', severity: 'medium' },
+        'Entertainment': { max: 4000, suggestion: 'Look for free or low-cost entertainment options like local parks, library events, or streaming bundles.', severity: 'medium' },
+        'Bills & Utilities': { max: 8000, suggestion: 'Check if you can reduce usage or switch to more efficient appliances.', severity: 'low' },
+        'Groceries': { max: 10000, suggestion: 'Plan your meals weekly, make a shopping list, and avoid buying on impulse.', severity: 'medium' },
+        'Healthcare': { max: 5000, suggestion: 'Consider a health insurance plan or medical loan for large expenses.', severity: 'low' },
+        'Education': { max: 15000, suggestion: 'Education is an investment! Consider scholarships, education loans, or EMI options.', severity: 'low' },
+        'Insurance': { max: 10000, suggestion: 'Review your coverage to make sure you\'re getting the best value.', severity: 'low' },
+        'Other': { max: 3000, suggestion: 'Review your miscellaneous expenses. Small amounts add up to big savings!', severity: 'low' }
+      };
+
+      const realityCheck = Object.entries(data.expenses.byCategory)
+        .map(([category, amount]) => {
+          const benchmark = CATEGORY_BENCHMARKS[category] || CATEGORY_BENCHMARKS['Other'];
+          const isOver = amount > benchmark.max;
+          const savings = Math.round(amount - benchmark.max);
+          return {
+            category,
+            amount,
+            benchmark: benchmark.max,
+            isOver,
+            savings: savings > 0 ? savings : 0,
+            suggestion: isOver ? benchmark.suggestion.replace('{savings}', savings.toLocaleString()) : null,
+            severity: isOver ? benchmark.severity : 'low'
+          };
+        })
+        .sort((a, b) => b.savings - a.savings);
+
+      const overSpending = realityCheck.filter(item => item.isOver);
+
+      sections.push({
+        heading: '💡 Spending Reality Check',
+        content: '',
+        type: overSpending.length > 0 ? 'warning' : 'achievement',
+        sectionType: 'monthly',
+        customComponent: (
+          <div className="space-y-4 mt-2">
+            {/* ... your existing customComponent content ... */}
+          </div>
+        )
+      });
+
+      // Monthly Spending Trend
+      if (data.expenses.monthlyTrend.length > 0) {
+        sections.push({
+          heading: 'Monthly Spending Trend',
+          content: `Your spending has ${currentMonth?.amount > previousMonth?.amount ? 'increased' : 'decreased'} over the past ${data.expenses.monthlyTrend.length} months.`,
+          type: 'insight',
+          sectionType: 'monthly',
+          chartData: data.expenses.monthlyTrend.map(m => ({ name: m.month, value: m.amount })),
+          chartType: 'line'
+        });
+      }
+      break;
+    }
+
+    case 'investment': {
+      // ... your investment case with sectionType: 'investment'
+      break;
+    }
+
+    case 'expense': {
+      // ... your expense case with sectionType: 'expense'
+      break;
+    }
+
+    case 'health': {
+      // ... your health case with sectionType: 'health'
+      break;
+    }
+
+    default: {
+      sections.push({
+        heading: 'Spending Distribution',
+        content: `Total monthly spending: ₹${data.expenses.total.toLocaleString()}`,
+        type: 'insight',
+        sectionType: 'default',
+        chartData: data.expenses.byCategory,
+        chartType: 'pie'
+      });
+      break;
+    }
+  }
+
+  return sections;
+};
+
+// ===== HELPER FUNCTIONS =====
+const getTopCategory = (categories: Record<string, number>): string => {
+  const entries = Object.entries(categories);
+  if (entries.length === 0) return 'No categories';
+  return entries.sort((a, b) => b[1] - a[1])[0][0];
+};
 
 // ===== MAIN COMPONENT =====
 const ReportViewer: React.FC<ReportViewerProps> = ({ 
@@ -61,13 +238,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [showGoalTracker, setShowGoalTracker] = useState<boolean>(false);
-
-  // ===== HELPER FUNCTIONS =====
-  const getTopCategory = (categories: Record<string, number>): string => {
-    const entries = Object.entries(categories);
-    if (entries.length === 0) return 'No categories';
-    return entries.sort((a, b) => b[1] - a[1])[0][0];
-  };
 
   // ===== LOAD REPORT =====
   const loadReport = async (): Promise<void> => {
@@ -139,7 +309,6 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
 
   const generateKeyTakeaways = (data: ReportData, type: string): string[] => {
     const savingsRate = calculateSavingsRate(data);
-    const topCategory = getTopCategory(data.expenses.byCategory);
     const onTrackGoals = data.goals.filter(g => g.progress > 50).length;
     const criticalAlerts = data.alerts.filter(a => a.severity === 'critical').length;
     const currentMonth = data.expenses.monthlyTrend[data.expenses.monthlyTrend.length - 1];
@@ -1297,65 +1466,5 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   );
 };
 
-// ===== CHART COMPONENT =====
-const ReportCharts: React.FC<{ data: any; chartType: 'pie' | 'bar' | 'line' }> = ({ data, chartType }) => {
-  let chartData = [];
-  if (Array.isArray(data)) {
-    chartData = data.map(item => ({ ...item }));
-  } else {
-    chartData = Object.entries(data).map(([name, value]) => ({ name, value: typeof value === 'number' ? value : 0 }));
-  }
-
-  if (chartType === 'pie') {
-    return (
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie data={chartData} cx="50%" cy="50%" labelLine={true}
-            label={(entry: any) => {
-              const total = chartData.reduce((s: number, i: any) => s + i.value, 0);
-              const percentage = total > 0 ? ((entry.value / total) * 100) : 0;
-              return `${entry.name} (${percentage.toFixed(0)}%)`;
-            }}
-            outerRadius={80} fill="#8884d8" dataKey="value" nameKey="name">
-            {chartData.map((entry: any, index: number) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip content={<CustomTooltip />} />
-        </PieChart>
-      </ResponsiveContainer>
-    );
-  }
-
-  if (chartType === 'line') {
-    return (
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          <XAxis dataKey="name" stroke="#9CA3AF" />
-          <YAxis stroke="#9CA3AF" tickFormatter={(value) => `₹${value.toLocaleString()}`} />
-          <Tooltip content={<CustomTooltip />} />
-          <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} />
-        </LineChart>
-      </ResponsiveContainer>
-    );
-  }
-
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={chartData}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-        <XAxis dataKey="name" stroke="#9CA3AF" />
-        <YAxis stroke="#9CA3AF" tickFormatter={(value) => `₹${value.toLocaleString()}`} />
-        <Tooltip content={<CustomTooltip />} />
-        <Bar dataKey="value" fill="#3B82F6" radius={[4, 4, 0, 0]}>
-          {chartData.map((entry: any, index: number) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-          ))}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  );
-};
-
+// ===== EXPORT DEFAULT =====
 export default ReportViewer;
