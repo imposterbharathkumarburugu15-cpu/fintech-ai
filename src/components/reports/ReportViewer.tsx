@@ -1319,7 +1319,7 @@ return (
 
     {/* Executive Summary - ONLY for Expense Analysis */}
     {reportType === 'expense' && report.summary && (
-      <div className="mb-8 p-6 bg-gray-800/50 border border-gray-700 rounded-xl">
+      <div className="mb-8 p-6 bg-gray-800/50 border border-gray-700 rounded-xl print:bg-gray-800 print:border-gray-700">
         <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Executive Summary</h2>
         <div className="space-y-1.5">
           {report.summary.split(' • ').map((point: string, index: number) => (
@@ -1343,7 +1343,7 @@ return (
             section.type === 'warning' ? 'border-yellow-800/30 bg-yellow-900/20' :
             section.type === 'achievement' ? 'border-green-800/30 bg-green-900/20' :
             'border-gray-700/50 bg-gray-800/50'
-          }`}
+          } print:border-gray-600 print:bg-gray-800 print:shadow-none`}
           onClick={() => setActiveSection(activeSection === index ? null : index)}
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -1353,19 +1353,19 @@ return (
             section.type === 'warning' ? 'text-yellow-400' :
             section.type === 'achievement' ? 'text-green-400' :
             'text-gray-200'
-          }`}>{section.heading}</h3>
+          } print:text-gray-200`}>{section.heading}</h3>
           
           {section.customComponent ? (
-            <div className="mt-2">
+            <div className="mt-2 print:block">
               {section.customComponent}
             </div>
           ) : (
-            <p className="text-gray-300 leading-relaxed whitespace-pre-line">{section.content}</p>
+            <p className="text-gray-300 leading-relaxed whitespace-pre-line print:text-gray-300">{section.content}</p>
           )}
           
           {section.chartData && !section.customComponent && activeSection === index && (
             <motion.div 
-              className="mt-6 h-64"
+              className="mt-6 h-64 print:h-64 print:overflow-visible"
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 256 }}
               transition={{ duration: 0.3 }}
@@ -1378,7 +1378,7 @@ return (
           )}
           
           {section.chartData && !section.customComponent && (
-            <div className="mt-3 text-sm text-blue-400">
+            <div className="mt-3 text-sm text-blue-400 print:hidden">
               {activeSection === index ? 'Hide chart' : 'Click to view chart'}
             </div>
           )}
@@ -1388,16 +1388,16 @@ return (
 
     {/* Key Takeaways - ONLY for Expense Analysis */}
     {reportType === 'expense' && report.keyTakeaways && report.keyTakeaways.length > 0 && (
-      <div className="mt-8 p-6 bg-yellow-900/20 border border-yellow-800/30 rounded-xl">
-        <h3 className="text-sm font-semibold text-yellow-400 uppercase tracking-wide mb-3">Key Takeaways</h3>
+      <div className="mt-8 p-6 bg-yellow-900/20 border border-yellow-800/30 rounded-xl print:bg-gray-800 print:border-gray-600">
+        <h3 className="text-sm font-semibold text-yellow-400 uppercase tracking-wide mb-3 print:text-yellow-400">Key Takeaways</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {report.keyTakeaways.map((takeaway: string, i: number) => (
             <div 
               key={i}
-              className="flex items-start gap-2 bg-gray-800/50 p-3 rounded-lg border border-gray-700"
+              className="flex items-start gap-2 bg-gray-800/50 p-3 rounded-lg border border-gray-700 print:bg-gray-800 print:border-gray-600"
             >
-              <span className="text-yellow-500 mt-0.5">•</span>
-              <span className="text-gray-300">{takeaway}</span>
+              <span className="text-yellow-500 mt-0.5 print:text-yellow-500">•</span>
+              <span className="text-gray-300 print:text-gray-300">{takeaway}</span>
             </div>
           ))}
         </div>
@@ -1406,7 +1406,7 @@ return (
 
     {/* Recommendations */}
     <div className="mt-8">
-      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4">Recommended Actions</h3>
+      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-4 print:text-gray-400">Recommended Actions</h3>
       <div className="grid md:grid-cols-3 gap-4">
         {report.recommendations.map((rec: Recommendation, i: number) => (
           <RecommendationCard key={i} recommendation={rec} index={i} />
@@ -1415,13 +1415,13 @@ return (
     </div>
 
     {/* Next Steps */}
-    <div className="mt-8 p-6 bg-gray-800/50 border border-gray-700 rounded-xl">
-      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3">Next Steps</h3>
+    <div className="mt-8 p-6 bg-gray-800/50 border border-gray-700 rounded-xl print:bg-gray-800 print:border-gray-600">
+      <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-3 print:text-gray-400">Next Steps</h3>
       <div className="flex flex-wrap gap-3">
         {report.nextSteps.map((step: string, i: number) => (
           <span 
             key={i}
-            className="px-4 py-2 bg-gray-700 rounded-lg border border-gray-600 hover:border-blue-500 transition-colors text-gray-300 text-sm"
+            className="px-4 py-2 bg-gray-700 rounded-lg border border-gray-600 hover:border-blue-500 transition-colors text-gray-300 text-sm print:bg-gray-700 print:border-gray-600 print:text-gray-300"
           >
             {i+1}. {step}
           </span>
@@ -1431,7 +1431,7 @@ return (
 
     {/* Goal Tracker Modal */}
     {showGoalTracker && (
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 print:hidden">
         <div className="w-full max-w-2xl max-h-[80vh] overflow-y-auto bg-gray-900 rounded-2xl border border-gray-700 shadow-2xl">
           <div className="sticky top-0 bg-gray-900 border-b border-gray-700 p-4 flex justify-between items-center">
             <h2 className="text-xl font-bold text-white">Goal Tracker</h2>
