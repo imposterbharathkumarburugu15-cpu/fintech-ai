@@ -34,15 +34,40 @@ const toDisplay = (row) => {
 };
 
 const CHART_DATA = [
-  { d: 'M', s: 400 }, { d: 'T', s: 700 }, { d: 'W', s: 500 }, { d: 'T', s: 1200 }, { d: 'F', s: 900 }
+  { d: 'Mon', s: 400 }, { d: 'Tue', s: 700 }, { d: 'Wed', s: 500 }, { d: 'Thu', s: 1200 }, { d: 'Fri', s: 900 }, { d: 'Sat', s: 1100 }, { d: 'Sun', s: 800 }
 ];
 
 function ExpenseIntelligence() {
+  const chartContainerRef = useRef(null);
+  const [chartWidth, setChartWidth] = useState(0);
+  const [isReady, setIsReady] = useState(false);
+
   const fileInputRef = useRef(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // FIX: Manual measurement logic to force the chart to appear in React 19
+  useEffect(() => {
+    const handleResize = () => {
+      if (chartContainerRef.current) {
+        setChartWidth(chartContainerRef.current.offsetWidth);
+      }
+    };
+
+    // Delay measurement so the browser has time to finish the initial layout
+    const timer = setTimeout(() => {
+      handleResize();
+      setIsReady(true);
+    }, 500);
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(timer);
+    };
+  }, []);
 
   async function refresh() {
     setLoading(true);
@@ -96,7 +121,7 @@ function ExpenseIntelligence() {
               <div className="space-y-6">
                 <div className="flex items-center gap-2 text-blue-500"><Sparkles className="w-4 h-4" /><span className="text-[10px] font-bold uppercase">AI Analysis Active</span></div>
                 <h2 className="text-3xl font-bold text-white leading-tight">Monthly spend is ₹{summary?.totalSpent?.toLocaleString() || "0"}.</h2>
-                <p className="text-slate-500 text-sm">Target savings for this month: <span className="text-blue-400">₹6,500</span></p>
+                <p className="text-slate-500 text-sm">Target savings for this month: <span className="text-blue-400 font-bold">₹6,500</span></p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -112,45 +137,85 @@ function ExpenseIntelligence() {
             </div>
           </motion.div>
 
-          {/* CHART */}
-          <div className="bg-[#0c0c0e] border border-white/5 rounded-[2rem] p-6 h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={CHART_DATA}>
-                <Area type="monotone" dataKey="s" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.1} />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* MAIN TREND CHART (FIXED FOR REACT 19) */}
+          <div className="bg-[#0c0c0e] border border-white/5 rounded-[2rem] p-8 min-h-[360px] flex flex-col">
+            <h3 className="text-white text-xs font-bold uppercase tracking-widest mb-8">Activity Trend Analysis</h3>
+            
+            <div ref={chartContainerRef} className="flex-1 w-full relative min-h-[250px]">
+              {isReady && chartWidth > 0 ? (
+                <AreaChart 
+                  width={chartWidth} 
+                  height={250} 
+                  data={CHART_DATA} 
+                  margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="expGlow" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="d" axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 11}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#475569', fontSize: 11}} />
+                  <Tooltip 
+                    contentStyle={{backgroundColor: '#161618', border: '1px solid #27272a', borderRadius: '12px'}}
+                    itemStyle={{color: '#fff', fontSize: '12px', fontWeight: 'bold'}}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="s" 
+                    stroke="#3b82f6" 
+                    strokeWidth={3} 
+                    fillOpacity={1} 
+                    fill="url(#expGlow)" 
+                    isAnimationActive={false} 
+                  />
+                </AreaChart>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-zinc-800 uppercase tracking-[0.4em] animate-pulse">
+                  Rendering Neural Graphics...
+                </div>
+              )}
+            </div>
           </div>
 
           {/* LIST */}
-          <div className="space-y-3">
+          <div className="space-y-3 pb-20">
             {transactions?.length > 0 ? (
               transactions.slice(0, 10).map((t) => (
-                <div key={t.id} className="bg-[#0c0c0e] border border-white/5 rounded-2xl p-4 flex justify-between items-center hover:border-white/10 transition-all">
+                <div key={t.id} className="bg-[#0c0c0e] border border-white/5 rounded-2xl p-4 flex justify-between items-center hover:border-white/10 transition-all cursor-pointer">
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center text-white"><CreditCard className="w-5 h-5" /></div>
+                    <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center text-zinc-400 group-hover:text-white"><CreditCard className="w-5 h-5" /></div>
                     <div>
                       <p className="font-bold text-white text-sm">{t.name}</p>
                       <p className="text-[10px] text-slate-500 font-bold uppercase">{t.category} • {t.date}</p>
                     </div>
                   </div>
-                  <p className={`font-bold ${t.type === 'income' ? 'text-emerald-500' : 'text-white'}`}>
-                    ₹{Math.abs(t.amount || 0).toLocaleString()}
+                  <p className={`font-mono font-bold ${t.type === 'income' ? 'text-emerald-500' : 'text-white'}`}>
+                    {t.type === 'income' ? '+' : '-'}₹{Math.abs(t.amount || 0).toLocaleString()}
                   </p>
                 </div>
               ))
             ) : (
-              <div className="text-center py-10 text-slate-600 uppercase text-[10px] font-bold tracking-widest">No Transactions Found</div>
+              <div className="text-center py-20 bg-white/[0.01] border border-dashed border-white/5 rounded-[2rem]">
+                <div className="text-slate-700 uppercase text-[10px] font-black tracking-[0.5em]">No Data Points Detected</div>
+              </div>
             )}
           </div>
         </div>
 
         {/* RIGHT COLUMN */}
         <div className="col-span-12 lg:col-span-3 space-y-6">
-           <div className="bg-[#0c0c0e] border border-white/5 rounded-[2rem] p-6">
-              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6">Security Scan</h3>
-              <div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl">
-                <p className="text-xs font-bold text-emerald-500">System Secure</p>
-                <p className="text-[10px] text-slate-400 mt-1">No anomalies detected in last 30 days.</p>
+           <div className="bg-[#0c0c0e] border border-white/5 rounded-[2rem] p-6 shadow-xl">
+              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
+                <Activity className="w-3 h-3" /> Security Scan
+              </h3>
+              <div className="bg-emerald-500/5 border border-emerald-500/10 p-4 rounded-2xl">
+                <div className="flex items-center gap-2 mb-1">
+                   <Shield className="w-3.5 h-3.5 text-emerald-500" />
+                   <p className="text-xs font-bold text-emerald-500">System Secure</p>
+                </div>
+                <p className="text-[10px] text-slate-500 leading-relaxed">Behavioral matching is consistent with verified history.</p>
               </div>
            </div>
         </div>

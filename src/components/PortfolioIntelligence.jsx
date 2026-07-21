@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, 
   BarChart, Bar, Cell, PieChart, Pie 
 } from "recharts";
 import { 
@@ -77,9 +77,32 @@ const CommandCard = ({ title, icon: Icon, children, badge }) => (
 
 export function PortfolioIntelligence() {
   const [expanded, setExpanded] = useState(null);
+  const chartRef = useRef(null);
+  const [chartWidth, setChartWidth] = useState(0);
+  const [isReady, setIsReady] = useState(false);
+
+  // FIX: Neural Render Sync for React 19
+  useEffect(() => {
+    const handleMeasure = () => {
+      if (chartRef.current) {
+        setChartWidth(chartRef.current.offsetWidth);
+      }
+    };
+
+    const timer = setTimeout(() => {
+      handleMeasure();
+      setIsReady(true);
+    }, 600); // 600ms to allow Institutional layout to stabilize
+
+    window.addEventListener("resize", handleMeasure);
+    return () => {
+      window.removeEventListener("resize", handleMeasure);
+      clearTimeout(timer);
+    };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-[#050505] text-slate-300 p-4 lg:p-8 font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#050505] text-slate-300 p-4 lg:p-8 font-sans selection:bg-blue-500/30 overflow-x-hidden">
       
       {/* HEADER */}
       <header className="max-w-[1400px] mx-auto flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-10">
@@ -101,15 +124,15 @@ export function PortfolioIntelligence() {
         </div>
       </header>
 
-      <div className="max-w-[1400px] mx-auto grid grid-cols-12 gap-8">
+      <div className="max-w-[1400px] mx-auto grid grid-cols-12 gap-8 items-start">
         
         {/* LEFT COLUMN (8 Units) */}
-        <div className="col-span-12 lg:col-span-8 space-y-8">
+        <div className="col-span-12 lg:col-span-8 space-y-8 min-w-0">
           
           {/* AI EXECUTIVE BRIEF */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden bg-[#0c0c0e] border border-white/5 rounded-[2.5rem] p-8 lg:p-10"
+            className="relative overflow-hidden bg-[#0c0c0e] border border-white/5 rounded-[2.5rem] p-8 lg:p-10 shadow-2xl"
           >
             <div className="absolute top-0 right-0 p-10 opacity-10">
               <Sparkles className="w-48 h-48 text-blue-500" />
@@ -123,15 +146,14 @@ export function PortfolioIntelligence() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="space-y-6">
-                  <h2 className="text-3xl font-bold text-white leading-tight">Welcome back,. Your portfolio is outperforming the benchmark by <span className="text-emerald-400">4.2%</span>.</h2>
+                  <h2 className="text-3xl font-bold text-white leading-tight">Your portfolio is outperforming the benchmark by <span className="text-emerald-400">4.2%</span>.</h2>
                   <div className="space-y-4">
                     {[
-                      { text: "Tech allocation is 8% overweight vs S&P 500.", type: "warning" },
-                      { text: "Cash reserves are currently below target by 2.4%.", type: "alert" },
-                      { text: "Diversification rating improved to 'Excellent'.", type: "info" }
+                      { text: "Tech allocation is 8% overweight vs S&P 500.", type: "amber-500" },
+                      { text: "Cash reserves are below target by 2.4%.", type: "rose-500" },
                     ].map((insight, i) => (
                       <div key={i} className="flex gap-4 items-start text-sm text-slate-400">
-                        <div className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${i === 0 ? 'bg-amber-500' : i === 1 ? 'bg-rose-500' : 'bg-blue-500'}`} />
+                        <div className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 bg-${insight.type}`} />
                         {insight.text}
                       </div>
                     ))}
@@ -155,40 +177,41 @@ export function PortfolioIntelligence() {
             </div>
           </motion.div>
 
-          {/* PERFORMANCE CHART */}
+          {/* PERFORMANCE CHART CARD (FIXED) */}
           <CommandCard title="Performance Analytics" icon={Activity}>
-            <div className="h-[350px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={PERFORMANCE_DATA}>
+            <div ref={chartRef} className="h-[350px] w-full relative">
+              {isReady && chartWidth > 0 ? (
+                <AreaChart width={chartWidth} height={350} data={PERFORMANCE_DATA} margin={{ top: 0, right: 10, left: -20, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
                       <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                  <XAxis dataKey="date" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                  <XAxis dataKey="date" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} dy={10} />
                   <YAxis hide domain={['auto', 'auto']} />
-                  <Tooltip contentStyle={{ backgroundColor: '#0c0c0e', border: '1px solid #ffffff10', borderRadius: '12px', fontSize: '12px' }} />
-                  <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
-                  <Area type="monotone" dataKey="benchmark" stroke="#475569" strokeWidth={2} strokeDasharray="5 5" fill="transparent" />
+                  <Tooltip contentStyle={{ backgroundColor: '#0c0c0e', border: '1px solid #ffffff10', borderRadius: '12px' }} />
+                  <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#glow)" isAnimationActive={false} />
+                  <Area type="monotone" dataKey="benchmark" stroke="#475569" strokeWidth={2} strokeDasharray="5 5" fill="transparent" isAnimationActive={false} />
                 </AreaChart>
-              </ResponsiveContainer>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-slate-800 uppercase tracking-[0.4em] animate-pulse">Calculating institutional vectors...</div>
+              )}
             </div>
             <div className="flex justify-center gap-6 mt-8">
-              {['1D', '1W', '1M', '3M', '1Y', '5Y'].map(t => (
+              {['1D', '1W', '1M', '3M', '1Y'].map(t => (
                 <button key={t} className={`text-[10px] font-black px-4 py-1.5 rounded-xl transition-all ${t === '1M' ? 'bg-white text-black' : 'text-slate-500 hover:text-white'}`}>{t}</button>
               ))}
             </div>
           </CommandCard>
 
           {/* HOLDINGS LIST */}
-          <div className="space-y-4">
+          <div className="space-y-4 pb-20">
             <div className="flex justify-between items-center px-4">
               <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
                 <Layers className="w-4 h-4 text-blue-500" /> Live Asset Inventory
               </h3>
-              <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">4 Holdings Active</span>
             </div>
 
             {HOLDINGS.map((h) => (
@@ -199,9 +222,7 @@ export function PortfolioIntelligence() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-6">
                   <div className="flex items-center gap-5 w-64">
-                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center font-black text-xs text-white group-hover:bg-blue-600 transition-colors">
-                      {h.symbol.substring(0, 2)}
-                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center font-black text-xs text-white group-hover:bg-blue-600 transition-colors">{h.symbol.substring(0, 2)}</div>
                     <div>
                       <p className="font-bold text-white text-base">{h.symbol}</p>
                       <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">{h.name}</p>
@@ -218,51 +239,20 @@ export function PortfolioIntelligence() {
                       <p className="text-xs font-bold text-white">${h.value.toLocaleString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] font-black text-slate-500 uppercase mb-1">24h Chg</p>
-                      <p className={`text-xs font-bold ${h.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{h.change}%</p>
-                    </div>
-                    <div className="text-right">
                       <p className="text-[10px] font-black text-slate-500 uppercase mb-1">Rating</p>
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${h.rating === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-500'}`}>
-                        {h.rating}
-                      </span>
+                      <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${h.rating === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-500/10 text-slate-500'}`}>{h.rating}</span>
                     </div>
                   </div>
                   <ChevronRight className={`w-4 h-4 text-slate-600 transition-transform ${expanded === h.symbol ? 'rotate-90' : ''}`} />
                 </div>
-
-                <AnimatePresence>
-                  {expanded === h.symbol && (
-                    <motion.div 
-                      initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                      className="mt-6 pt-6 border-t border-white/5 grid grid-cols-3 gap-8"
-                    >
-                      <div className="space-y-3">
-                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Business Sentiment</p>
-                        <p className="text-xs text-slate-400 leading-relaxed">Exposure to global {h.type} markets. High {h.rating === 'BUY' ? 'Alpha' : 'Beta'} score identified by AI engine.</p>
-                      </div>
-                      <div className="space-y-3">
-                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Recent Activity</p>
-                        <div className="text-[10px] font-bold text-slate-200 bg-white/5 p-2 rounded-lg">Institutional Buy In-Flow detected...</div>
-                        <div className="text-[10px] font-bold text-slate-200 bg-white/5 p-2 rounded-lg">Regulatory filings show stability...</div>
-                      </div>
-                      <div className="bg-blue-600/10 border border-blue-500/20 p-4 rounded-2xl">
-                        <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">AI Optimization</p>
-                        <p className="text-xs font-bold text-white mb-1">Re-Target Weight: {h.allocation + 4}%</p>
-                        <p className="text-[10px] text-slate-400">Increase position to capture expected growth in {h.type} sector.</p>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </motion.div>
             ))}
           </div>
         </div>
 
         {/* RIGHT COLUMN (4 Units) */}
-        <div className="col-span-12 lg:col-span-4 space-y-8">
+        <div className="col-span-12 lg:col-span-4 space-y-8 min-w-0">
           
-          {/* HEALTH SCORE */}
           <CommandCard title="Integrity Index" icon={ShieldCheck}>
             <div className="flex flex-col items-center py-6">
               <HealthGauge score={92} />
@@ -271,7 +261,6 @@ export function PortfolioIntelligence() {
                   { label: "Diversification", score: 88 },
                   { label: "Liquidity", score: 95 },
                   { label: "Risk-Adjusted", score: 91 },
-                  { label: "Income Yield", score: 62 },
                 ].map((item, i) => (
                   <div key={i} className="space-y-2">
                     <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter">
@@ -287,20 +276,16 @@ export function PortfolioIntelligence() {
             </div>
           </CommandCard>
 
-          {/* RISK COMMAND CENTER */}
           <CommandCard title="Risk Lab" icon={ShieldAlert}>
             <div className="space-y-6">
               {[
-                { label: "Market Volatility", risk: "Low", score: 32, color: "bg-emerald-500" },
+                { label: "Volatility", risk: "Low", score: 32, color: "bg-emerald-500" },
                 { label: "Concentration", risk: "High", score: 85, color: "bg-rose-500" },
-                { label: "Currency Drift", risk: "Med", score: 45, color: "bg-amber-500" },
               ].map((r, i) => (
                 <div key={i} className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-xs font-bold text-slate-300">{r.label}</span>
-                    <span className={`text-[9px] font-black px-2 py-0.5 rounded ${r.risk === 'High' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
-                      {r.risk}
-                    </span>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded ${r.risk === 'High' ? 'bg-rose-500/10 text-rose-500' : 'bg-emerald-500/10 text-emerald-500'}`}>{r.risk}</span>
                   </div>
                   <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
                     <div className={`h-full ${r.color}`} style={{ width: `${r.score}%` }} />
@@ -310,44 +295,18 @@ export function PortfolioIntelligence() {
             </div>
           </CommandCard>
 
-          {/* SCENARIO LAB */}
-          <CommandCard title="Scenario Lab" icon={Cpu} badge="Beta">
-            <p className="text-xs text-slate-500 mb-6 leading-relaxed italic">Simulating portfolio impact against potential market dislocations.</p>
-            <div className="grid grid-cols-1 gap-3">
-              {[
-                { l: "Fed Rate Hike (+50bps)", impact: "-2.4%", color: "text-rose-400" },
-                { l: "Nasdaq Correction (-10%)", impact: "-6.2%", color: "text-rose-500" },
-                { l: "Oil Supply Shock", impact: "+1.2%", color: "text-emerald-400" },
-              ].map((s, i) => (
-                <div key={i} className="flex justify-between items-center p-4 bg-white/5 border border-white/5 rounded-2xl">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{s.l}</span>
-                  <span className={`text-xs font-bold ${s.impact.startsWith('-') ? 'text-rose-500' : 'text-emerald-500'}`}>{s.impact}</span>
-                </div>
-              ))}
-            </div>
-          </CommandCard>
-
-          {/* AI QUICK ACTIONS */}
           <div className="space-y-3">
-            {[
-              { l: "Optimize Allocation", icon: Zap, c: "text-amber-400" },
-              { l: "Generate Risk Report", icon: FileText, c: "text-purple-400" },
-              { l: "Tax Optimization", icon: Landmark, c: "text-blue-400" }
-            ].map((action, i) => (
-              <button key={i} className="w-full flex items-center justify-between p-5 bg-[#0c0c0e] hover:bg-white/5 border border-white/5 rounded-3xl transition-all group">
+             <button className="w-full flex items-center justify-between p-5 bg-[#0c0c0e] hover:bg-white/5 border border-white/5 rounded-3xl transition-all group">
                 <div className="flex items-center gap-4">
-                  <action.icon className={`w-4 h-4 ${action.c}`} />
-                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{action.l}</span>
+                  <Zap className="w-4 h-4 text-amber-400" />
+                  <span className="text-[10px] font-black text-white uppercase tracking-widest">Optimize Allocation</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-slate-700 group-hover:translate-x-1 transition-transform" />
               </button>
-            ))}
           </div>
 
         </div>
       </div>
-      
-      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
     </div>
   );
 }
