@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
 import OpenAI from "openai";
 import { GoogleGenAI } from "@google/genai";
+import puppeteer from 'puppeteer';
 import cors from "cors";
 dotenv.config();
 
@@ -599,6 +600,112 @@ app.post("/api/chat/stream", async (req, res) => {
       res.write(`data: ${JSON.stringify({ error: errorMessage })}\n\n`);
       res.end();
     }
+  }
+});
+
+
+// ===============================
+// PDF Export Endpoint (Server-side rendering with Puppeteer)
+// ===============================
+app.post("/api/export-pdf", async (req, res) => {
+  try {
+    const { html, title, reportType } = req.body;
+
+    if (!html) {
+      return res.status(400).json({ error: "HTML content is required." });
+    }
+
+    console.log(`📄 Generating PDF for report: ${title || 'Financial Report'}`);
+
+    // Launch browser with error handling
+    let browser;
+    try {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--disable-gpu',
+          '--disable-features=IsolateOrigins,site-per-process',
+          '--no-first-run',
+          '--no-zygote',
+          '--single-process'
+        ]
+      });
+    } catch (launchError: any) {
+      console.error('Failed to launch browser:', launchError.message);
+      return res.status(500).json({ 
+        error: 'PDF generation service unavailable',
+        details: 'Failed to launch browser. Please try again later.'
+      });
+    }
+
+    try {
+      const page = await browser.newPage();
+
+      // Set viewport
+      await page.setViewport({
+        width: 1200,
+        height: 800,
+        deviceScaleFactor: 1,
+      });
+
+      // ✅ FIXED: Proper typing for waitUntil
+      await page.setContent(html, {
+        waitUntil: 'networkidle0' as any,  // ✅ No 'as const' needed with proper import
+        timeout: 30000,
+      });
+
+      // Wait for charts to render
+      try {
+        await page.waitForSelector('.recharts-wrapper', { timeout: 5000 });
+      } catch (selectorError) {
+        console.log('Charts not found, continuing anyway...');
+      }
+      
+      // Extra wait for rendering
+      await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 1000)));
+
+      // Generate PDF
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: {
+          top: '20px',
+          bottom: '20px',
+          left: '20px',
+          right: '20px',
+        },
+        displayHeaderFooter: false,
+        preferCSSPageSize: false,
+      });
+
+      await browser.close();
+
+      // Set response headers
+      const fileName = `${title?.replace(/\s/g, '_') || 'Financial_Report'}_${new Date().toISOString().split('T')[0]}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
+
+    } catch (pageError: any) {
+      console.error('PDF generation failed:', pageError.message);
+      if (browser) await browser.close();
+      return res.status(500).json({ 
+        error: 'Failed to generate PDF', 
+        details: pageError?.message || 'Unknown error' 
+      });
+    }
+
+  } catch (error: any) {
+    console.error('PDF Export Error:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate PDF', 
+      details: error?.message || 'Unknown error' 
+    });
   }
 });
 
