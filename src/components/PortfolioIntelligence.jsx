@@ -123,7 +123,7 @@ export function PortfolioIntelligence() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div className="space-y-6">
-                  <h2 className="text-3xl font-bold text-white leading-tight">Good Afternoon Bharath. Your portfolio is outperforming the benchmark by <span className="text-emerald-400">4.2%</span>.</h2>
+                  <h2 className="text-3xl font-bold text-white leading-tight">Welcome back,. Your portfolio is outperforming the benchmark by <span className="text-emerald-400">4.2%</span>.</h2>
                   <div className="space-y-4">
                     {[
                       { text: "Tech allocation is 8% overweight vs S&P 500.", type: "warning" },
