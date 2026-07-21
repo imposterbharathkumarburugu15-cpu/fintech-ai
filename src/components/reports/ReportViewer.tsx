@@ -190,10 +190,7 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
   };
 
   // ===== GENERATE SECTIONS =====
-  // src/components/reports/ReportViewer.tsx
-
-// ===== GENERATE SECTIONS =====
-const generateSections = (data: ReportData, type: string): any[] => {
+  const generateSections = (data: ReportData, type: string): any[] => {
   const sections: any[] = [];
   const topCategory = getTopCategory(data.expenses.byCategory);
   const savingsRate = calculateSavingsRate(data);
@@ -201,50 +198,124 @@ const generateSections = (data: ReportData, type: string): any[] => {
   const previousMonth = data.expenses.monthlyTrend[data.expenses.monthlyTrend.length - 2] || data.expenses.monthlyTrend[0];
 
   switch(type) {
-    case 'monthly':
-      // ===== MONTHLY REPORT =====
-      // 1. Spending Distribution with Legend
+    case 'monthly': {
+      // Monthly Report - Reality Check
+      const CATEGORY_BENCHMARKS: Record<string, { max: number; suggestion: string; severity: 'low' | 'medium' | 'high' }> = {
+        'Food & Dining': { max: 8000, suggestion: 'Consider meal prepping and cooking at home. This could save you ₹{savings} per month.', severity: 'high' },
+        'Transportation': { max: 5000, suggestion: 'Consider carpooling, using public transport, or walking for short distances.', severity: 'medium' },
+        'Shopping': { max: 6000, suggestion: 'Try the 24-hour rule before making a purchase. Wait a day and ask if you really need it.', severity: 'medium' },
+        'Entertainment': { max: 4000, suggestion: 'Look for free or low-cost entertainment options like local parks, library events, or streaming bundles.', severity: 'medium' },
+        'Bills & Utilities': { max: 8000, suggestion: 'Check if you can reduce usage or switch to more efficient appliances.', severity: 'low' },
+        'Groceries': { max: 10000, suggestion: 'Plan your meals weekly, make a shopping list, and avoid buying on impulse.', severity: 'medium' },
+        'Healthcare': { max: 5000, suggestion: 'Consider a health insurance plan or medical loan for large expenses.', severity: 'low' },
+        'Education': { max: 15000, suggestion: 'Education is an investment! Consider scholarships, education loans, or EMI options.', severity: 'low' },
+        'Insurance': { max: 10000, suggestion: 'Review your coverage to make sure you\'re getting the best value.', severity: 'low' },
+        'Other': { max: 3000, suggestion: 'Review your miscellaneous expenses. Small amounts add up to big savings!', severity: 'low' }
+      };
+
+      const realityCheck = Object.entries(data.expenses.byCategory)
+        .map(([category, amount]) => {
+          const benchmark = CATEGORY_BENCHMARKS[category] || CATEGORY_BENCHMARKS['Other'];
+          const isOver = amount > benchmark.max;
+          const savings = Math.round(amount - benchmark.max);
+          return {
+            category,
+            amount,
+            benchmark: benchmark.max,
+            isOver,
+            savings: savings > 0 ? savings : 0,
+            suggestion: isOver ? benchmark.suggestion.replace('{savings}', savings.toLocaleString()) : null,
+            severity: isOver ? benchmark.severity : 'low'
+          };
+        })
+        .sort((a, b) => b.savings - a.savings);
+
+      const overSpending = realityCheck.filter(item => item.isOver);
+      const onTrack = realityCheck.filter(item => !item.isOver);
+
+      // Spending Distribution with Pie Chart
       const pieData = Object.entries(data.expenses.byCategory).map(([name, value]) => ({
         name,
         value
       }));
 
       sections.push({
-        heading: 'Spending Distribution',
-        content: `Total monthly spending: ₹${data.expenses.total.toLocaleString()} across ${Object.keys(data.expenses.byCategory).length} categories. ${topCategory} is your highest expense at ${Math.round((data.expenses.byCategory[topCategory] / data.expenses.total) * 100)}% of total.`,
-        type: 'insight',
+        heading: '💡 Spending Reality Check',
+        content: '',
+        type: overSpending.length > 0 ? 'warning' : 'achievement',
         customComponent: (
-          <div className="mt-4">
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                  nameKey="name"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Legend 
-                  layout="vertical" 
-                  align="right" 
-                  verticalAlign="middle"
-                  formatter={(value) => <span style={{ color: '#d1d5db' }}>{value}</span>}
-                />
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                <p className="text-gray-400 text-sm">Total Spent</p>
+                <p className="text-white text-2xl font-bold">₹{data.expenses.total.toLocaleString()}</p>
+              </div>
+              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                <p className="text-gray-400 text-sm">Categories Over Budget</p>
+                <p className={`text-2xl font-bold ${overSpending.length > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                  {overSpending.length}
+                </p>
+              </div>
+              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                <p className="text-gray-400 text-sm">Potential Savings</p>
+                <p className={`text-2xl font-bold ${overSpending.length > 0 ? 'text-yellow-400' : 'text-green-400'}`}>
+                  {overSpending.length > 0 ? `₹${overSpending.reduce((sum, item) => sum + item.savings, 0).toLocaleString()}` : '✅ On Track'}
+                </p>
+              </div>
+            </div>
+            {overSpending.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="text-red-400 font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" /> Categories Needing Attention
+                </h4>
+                {overSpending.map((item, index) => (
+                  <div key={index} className={`p-4 rounded-lg border ${
+                    item.severity === 'high' ? 'bg-red-900/20 border-red-800/30' :
+                    item.severity === 'medium' ? 'bg-yellow-900/20 border-yellow-800/30' :
+                    'bg-blue-900/20 border-blue-800/30'
+                  }`}>
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-semibold">{item.category}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                            item.severity === 'high' ? 'bg-red-900/50 text-red-400' :
+                            item.severity === 'medium' ? 'bg-yellow-900/50 text-yellow-400' :
+                            'bg-blue-900/50 text-blue-400'
+                          }`}>
+                            {item.severity === 'high' ? 'High Priority' :
+                             item.severity === 'medium' ? 'Medium Priority' : 'Review'}
+                          </span>
+                        </div>
+                        <div className="flex gap-4 mt-1 text-sm">
+                          <span className="text-gray-400">Spent: ₹{item.amount.toLocaleString()}</span>
+                          <span className="text-gray-400">Budget: ₹{item.benchmark.toLocaleString()}</span>
+                          <span className="text-red-400 font-semibold">Over: ₹{item.savings.toLocaleString()}</span>
+                        </div>
+                      </div>
+                      <div className="w-full md:w-48 h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${item.severity === 'high' ? 'bg-red-500' : 'bg-yellow-500'}`}
+                          style={{ width: `${Math.min((item.amount / item.benchmark) * 100, 100)}%` }} />
+                      </div>
+                    </div>
+                    <div className="mt-2 p-2 bg-gray-800/50 rounded-lg">
+                      <p className="text-sm text-gray-300">💡 {item.suggestion}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {overSpending.length === 0 && (
+              <div className="p-4 rounded-lg bg-green-900/20 border border-green-800/30 text-center">
+                <h4 className="text-green-400 font-semibold mb-2">🌟 Excellent Financial Management!</h4>
+                <p className="text-sm text-gray-300">You're staying within budget across all categories. Keep up the great work!</p>
+              </div>
+            )}
           </div>
         )
       });
 
-      // 2. Monthly Spending Trend
+      // Monthly Spending Trend
       if (data.expenses.monthlyTrend.length > 0) {
         sections.push({
           heading: 'Monthly Spending Trend',
@@ -255,7 +326,7 @@ const generateSections = (data: ReportData, type: string): any[] => {
         });
       }
 
-      // 3. Profit & Loss Summary
+      // Profit & Loss Summary
       const totalIncome = data.expenses.monthlyTrend.length > 0 
         ? Math.round(data.expenses.monthlyTrend[data.expenses.monthlyTrend.length - 1].amount * 1.25)
         : 50000;
@@ -289,7 +360,7 @@ const generateSections = (data: ReportData, type: string): any[] => {
         )
       });
 
-      // 4. Quick Summary Cards
+      // Quick Summary Cards
       sections.push({
         heading: 'Monthly Summary',
         content: '',
@@ -318,8 +389,9 @@ const generateSections = (data: ReportData, type: string): any[] => {
         )
       });
       break;
+    }
 
-    case 'investment':
+    case 'investment': {
       // ===== PORTFOLIO REPORT =====
       const holdings = data.investments.holdings;
       const totalValue = data.investments.totalValue;
@@ -328,13 +400,10 @@ const generateSections = (data: ReportData, type: string): any[] => {
       const avgReturn = holdings.length > 0 ? holdings.reduce((sum, h) => sum + h.change, 0) / holdings.length : 0;
       const bestPerformer = winners.length > 0 ? winners.reduce((a, b) => a.change > b.change ? a : b) : null;
       const worstPerformer = losers.length > 0 ? losers.reduce((a, b) => a.change < b.change ? a : b) : null;
-      const sectorData = Object.entries(data.investments.sectorAllocation).map(([name, value]) => ({
-        sector: name,
-        value
-      }));
+      const sectorData = Object.entries(data.investments.sectorAllocation).map(([name, value]) => ({ sector: name, value }));
 
       sections.push({
-        heading: 'Portfolio Overview',
+        heading: '📊 Portfolio Overview',
         content: '',
         type: avgReturn >= 0 ? 'achievement' : 'warning',
         customComponent: (
@@ -359,7 +428,6 @@ const generateSections = (data: ReportData, type: string): any[] => {
                 <p className="text-red-400 text-2xl font-bold">{losers.length}</p>
               </div>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {bestPerformer && (
                 <div className="bg-green-900/20 border border-green-800/30 rounded-lg p-4">
@@ -387,7 +455,7 @@ const generateSections = (data: ReportData, type: string): any[] => {
       });
 
       sections.push({
-        heading: 'Stock Performance',
+        heading: '📈 Stock Performance',
         content: 'Individual stock performance and recommendations',
         type: 'insight',
         customComponent: (
@@ -396,27 +464,26 @@ const generateSections = (data: ReportData, type: string): any[] => {
               const isPositive = holding.change >= 0;
               const isHighRisk = holding.change < -5;
               const isOutperforming = holding.change > 5;
-              
-              let recommendation = '';
               let action = 'Hold';
               let actionColor = 'text-yellow-400';
+              let recommendation = '';
               
               if (isOutperforming) {
-                recommendation = 'Strong performer. Consider taking profits.';
                 action = 'Hold/Sell Partial';
                 actionColor = 'text-green-400';
+                recommendation = 'Strong performer. Consider taking profits.';
               } else if (isHighRisk) {
-                recommendation = 'Underperforming. Consider selling.';
                 action = 'Sell/Reduce';
                 actionColor = 'text-red-400';
+                recommendation = 'Underperforming. Consider selling.';
               } else if (isPositive) {
-                recommendation = 'Steady growth. Good to hold.';
                 action = 'Hold';
                 actionColor = 'text-blue-400';
+                recommendation = 'Steady growth. Good to hold.';
               } else {
-                recommendation = 'Monitor closely.';
                 action = 'Monitor';
                 actionColor = 'text-yellow-400';
+                recommendation = 'Monitor closely.';
               }
 
               return (
@@ -432,17 +499,13 @@ const generateSections = (data: ReportData, type: string): any[] => {
                       <p className="text-gray-400 text-sm">{holding.shares} shares • ₹{holding.value.toLocaleString()}</p>
                     </div>
                     <div className="text-left md:text-right">
-                      <span className={`text-sm font-semibold ${actionColor}`}>
-                        {action}
-                      </span>
+                      <span className={`text-sm font-semibold ${actionColor}`}>{action}</span>
                       <p className="text-sm text-gray-300 mt-1">{recommendation}</p>
                     </div>
                   </div>
                   <div className="mt-3 w-full h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full ${isPositive ? 'bg-green-400' : 'bg-red-400'}`}
-                      style={{ width: `${Math.min(Math.abs(holding.change) * 3, 100)}%` }}
-                    />
+                    <div className={`h-full rounded-full ${isPositive ? 'bg-green-400' : 'bg-red-400'}`}
+                      style={{ width: `${Math.min(Math.abs(holding.change) * 3, 100)}%` }} />
                   </div>
                 </div>
               );
@@ -452,7 +515,7 @@ const generateSections = (data: ReportData, type: string): any[] => {
       });
 
       sections.push({
-        heading: 'Sector Allocation & Risk Analysis',
+        heading: '📊 Sector Allocation & Risk Analysis',
         content: '',
         type: 'insight',
         customComponent: (
@@ -472,7 +535,6 @@ const generateSections = (data: ReportData, type: string): any[] => {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-
             <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
               <p className="text-gray-400 text-sm mb-3">Risk Vector</p>
               <ResponsiveContainer width="100%" height={200}>
@@ -489,8 +551,9 @@ const generateSections = (data: ReportData, type: string): any[] => {
         )
       });
       break;
+    }
 
-    case 'expense':
+    case 'expense': {
       // ===== EXPENSE ANALYSIS - TEXT-ONLY SUMMARY =====
       
       // Get data for calculations
@@ -558,15 +621,15 @@ const generateSections = (data: ReportData, type: string): any[] => {
                    (${Math.abs(savingsDifference).toFixed(1)}% increase). Consider reviewing your expenses.`}
             </p>
             <p>
-              You have <strong className="text-white">{data.expenses.recurringPayments.length}</strong> recurring payments 
-              totaling <strong className="text-white">₹{data.expenses.recurringPayments.reduce((sum, r) => sum + r.amount, 0).toLocaleString()}</strong> 
-              per month. {data.expenses.recurringPayments.length > 3 && 'Consider reviewing these subscriptions for potential savings.'}
+              You have <strong className="text-white">{data.expenses.recurringPayments?.length || 0}</strong> recurring payments 
+              totaling <strong className="text-white">₹{(data.expenses.recurringPayments?.reduce((sum, r) => sum + r.amount, 0) || 0).toLocaleString()}</strong> 
+              per month. {(data.expenses.recurringPayments?.length || 0) > 3 && 'Consider reviewing these subscriptions for potential savings.'}
             </p>
-            {data.expenses.unusualSpending.length > 0 && (
+            {(data.expenses.unusualSpending?.length || 0) > 0 && (
               <p>
                 ⚠️ We detected <strong className="text-white">{data.expenses.unusualSpending.length}</strong> unusual transactions 
                 totaling <strong className="text-white">₹{data.expenses.unusualSpending.reduce((sum, t) => sum + t.amount, 0).toLocaleString()}</strong>.
-                {data.expenses.unusualSpending.length > 0 && ' Review these transactions to ensure they were planned and necessary.'}
+                {' '}Review these transactions to ensure they were planned and necessary.
               </p>
             )}
           </div>
@@ -732,7 +795,7 @@ const generateSections = (data: ReportData, type: string): any[] => {
               </div>
             )}
 
-            {data.expenses.recurringPayments.length > 0 && (
+            {(data.expenses.recurringPayments?.length || 0) > 0 && (
               <div className="p-4 bg-purple-900/20 border border-purple-800/30 rounded-lg">
                 <p className="text-purple-300">
                   📋 <strong className="text-white">Subscription Check:</strong> You have {data.expenses.recurringPayments.length} recurring payments.
@@ -776,8 +839,9 @@ const generateSections = (data: ReportData, type: string): any[] => {
         )
       });
       break;
+    }
 
-    case 'health':
+    case 'health': {
       // ===== FINANCIAL WELLNESS =====
       const healthScore2 = data.healthScore || 0;
       const monthlyExpenses2 = data.expenses.total || 0;
@@ -790,7 +854,7 @@ const generateSections = (data: ReportData, type: string): any[] => {
       const goalProgressHealth = Math.round((goalsOnTrackHealth / totalGoalsHealth) * 100);
 
       sections.push({
-        heading: 'Your Financial Wellness Score',
+        heading: '❤️ Your Financial Wellness Score',
         content: '',
         type: healthScore2 >= 70 ? 'achievement' : 'warning',
         customComponent: (
@@ -800,14 +864,11 @@ const generateSections = (data: ReportData, type: string): any[] => {
                 <div className="relative w-32 h-32 flex-shrink-0">
                   <svg className="w-32 h-32 transform -rotate-90">
                     <circle cx="64" cy="64" r="56" stroke="#374151" strokeWidth="12" fill="none"/>
-                    <circle 
-                      cx="64" cy="64" r="56" 
+                    <circle cx="64" cy="64" r="56" 
                       stroke={healthScore2 >= 70 ? '#10B981' : healthScore2 >= 50 ? '#F59E0B' : '#EF4444'} 
-                      strokeWidth="12" 
-                      fill="none" 
+                      strokeWidth="12" fill="none" 
                       strokeDasharray={`${(healthScore2 / 100) * 351.86} 351.86`}
-                      strokeLinecap="round"
-                    />
+                      strokeLinecap="round" />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center flex-col">
                     <span className="text-3xl font-bold text-white">{healthScore2}</span>
@@ -876,7 +937,7 @@ const generateSections = (data: ReportData, type: string): any[] => {
       });
 
       sections.push({
-        heading: 'Your Personalized Action Plan',
+        heading: '🎯 Your Personalized Action Plan',
         content: '',
         type: 'insight',
         customComponent: (
@@ -946,7 +1007,7 @@ const generateSections = (data: ReportData, type: string): any[] => {
       });
 
       sections.push({
-        heading: 'Financial Health Checklist',
+        heading: '✅ Financial Health Checklist',
         content: '',
         type: 'insight',
         customComponent: (
@@ -976,7 +1037,7 @@ const generateSections = (data: ReportData, type: string): any[] => {
       });
 
       sections.push({
-        heading: 'Your Financial Journey',
+        heading: '💪 Your Financial Journey',
         content: '',
         type: 'achievement',
         customComponent: (
@@ -995,8 +1056,9 @@ const generateSections = (data: ReportData, type: string): any[] => {
         )
       });
       break;
+    }
 
-    default:
+    default: {
       sections.push({
         heading: 'Spending Distribution',
         content: `Total monthly spending: ₹${data.expenses.total.toLocaleString()} across ${Object.keys(data.expenses.byCategory).length} categories.`,
@@ -1014,11 +1076,11 @@ const generateSections = (data: ReportData, type: string): any[] => {
         });
       }
       break;
+    }
   }
 
   return sections;
 };
-
   // ===== EFFECTS =====
   useEffect(() => {
     loadReport();
