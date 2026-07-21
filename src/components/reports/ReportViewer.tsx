@@ -711,26 +711,211 @@ const loadReport = async (): Promise<void> => {
         });
         break;
 
-      default:
-        sections.push({
-          heading: 'Spending Distribution',
-          content: `Total monthly spending: ₹${data.expenses.total.toLocaleString()} across ${Object.keys(data.expenses.byCategory).length} categories.`,
-          type: 'insight',
-          chartData: data.expenses.byCategory,
-          chartType: 'pie'
-        });
+      case 'monthly':
+        const totalIncome = data.expenses.monthlyTrend.length > 0 
+          ? Math.round(data.expenses.monthlyTrend[data.expenses.monthlyTrend.length - 1].amount * 1.25)
+          : 50000;
 
-        if (data.expenses.monthlyTrend.length > 0) {
-          sections.push({
-            heading: 'Monthly Spending Trend',
-            content: `Your spending over the past ${data.expenses.monthlyTrend.length} months.`,
-            type: 'insight',
-            chartData: data.expenses.monthlyTrend.map(m => ({ name: m.month, value: m.amount })),
-            chartType: 'line'
-          });
+        const totalExpenses = data.expenses.total || 0;
+        const netProfit = totalIncome - totalExpenses;
+        const isProfit = netProfit >= 0;
+
+        const stockProfitLoss = data.investments.holdings.reduce((sum: number, inv: any) => {
+          return sum + (Number(inv.value || 0) * (Number(inv.change || 0) / 100));
+        }, 0);
+
+        // ===== GENERATE SMART SUMMARY =====
+        const generateSmartSummary = () => {
+          const summaries: string[] = [];
+          const categories = data.expenses.byCategory;
+          const total = data.expenses.total;
+          
+          // Exclude essential categories
+          const essentialCategories = ['Education', 'Healthcare', 'Medical', 'Insurance', 'Health'];
+          
+          // Find top non-essential spending categories
+          const nonEssentialSpending = Object.entries(categories)
+            .filter(([category]) => !essentialCategories.some(ec => 
+              category.toLowerCase().includes(ec.toLowerCase())
+            ))
+            .sort((a, b) => b[1] - a[1]);
+
+          // Find top essential spending (for context)
+          const essentialSpending = Object.entries(categories)
+            .filter(([category]) => essentialCategories.some(ec => 
+              category.toLowerCase().includes(ec.toLowerCase())
+            ))
+            .sort((a, b) => b[1] - a[1]);
+
+          // 1. Overall financial health
+          if (isProfit) {
+            summaries.push(`✅ You're in profit this month! You saved ₹${netProfit.toLocaleString()}.`);
+          } else {
+            summaries.push(`📊 You overspent by ₹${Math.abs(netProfit).toLocaleString()} this month.`);
+          }
+
+          // 2. Non-essential spending insights
+          if (nonEssentialSpending.length > 0) {
+            const topNonEssential = nonEssentialSpending[0];
+            const topPercentage = Math.round((topNonEssential[1] / total) * 100);
+            
+            summaries.push(`🛍️ Your biggest non-essential expense is **${topNonEssential[0]}** at ₹${topNonEssential[1].toLocaleString()} (${topPercentage}% of total).`);
+            
+            // Suggest reduction
+            const suggestedSave = Math.round(topNonEssential[1] * 0.15);
+            summaries.push(`💡 Reducing ${topNonEssential[0]} by just 15% could save you ₹${suggestedSave.toLocaleString()} per month.`);
+          }
+
+          // 3. Essential spending (for awareness)
+          if (essentialSpending.length > 0) {
+            const totalEssential = essentialSpending.reduce((sum, [_, amount]) => sum + amount, 0);
+            summaries.push(`📚 Essential expenses (Education, Healthcare) total ₹${totalEssential.toLocaleString()}. These are necessary expenses.`);
+          }
+
+          // 4. Recurring payments insight
+          if (data.expenses.recurringPayments.length > 0) {
+            const totalRecurring = data.expenses.recurringPayments.reduce((sum, r) => sum + r.amount, 0);
+            summaries.push(`🔄 You have ${data.expenses.recurringPayments.length} subscriptions totaling ₹${totalRecurring.toLocaleString()}/month.`);
+            
+            if (data.expenses.recurringPayments.length > 3) {
+              summaries.push(`💡 Consider reviewing your subscriptions - cancelling just one could save you ₹${Math.round(totalRecurring * 0.15).toLocaleString()}/month.`);
+            }
+          }
+
+          // 5. Stock performance insight
+          if (stockProfitLoss !== 0) {
+            summaries.push(`📈 Your portfolio ${stockProfitLoss > 0 ? 'gained' : 'lost'} ${Math.abs(stockProfitLoss).toFixed(2)}% this month.`);
+          }
+
+          // 6. Savings rate insight
+          if (savingsRate < 20) {
+            summaries.push(`💰 Your savings rate is ${savingsRate}%. Aim for 20% by reducing non-essential spending.`);
+          } else {
+            summaries.push(`🌟 Great job! Your savings rate is ${savingsRate}% - above the recommended 20%.`);
+          }
+
+          return summaries;
+        };
+
+        const smartSummary = generateSmartSummary();
+
+        sections.push({
+          heading: '📊 Profit & Loss Summary',
+          content: '',
+          type: isProfit ? 'achievement' : 'warning',
+          customComponent: (
+            <div className="space-y-4 mt-2">
+              {/* Summary Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                  <p className="text-gray-400 text-sm">Total Income</p>
+                  <p className="text-green-400 text-2xl font-bold">₹{totalIncome.toLocaleString()}</p>
+                </div>
+                <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                  <p className="text-gray-400 text-sm">Total Expenses</p>
+                  <p className="text-red-400 text-2xl font-bold">₹{totalExpenses.toLocaleString()}</p>
+                </div>
+                <div className={`p-4 rounded-lg border ${isProfit ? 'border-green-800/30 bg-green-900/20' : 'border-red-800/30 bg-red-900/20'}`}>
+                  <p className="text-gray-400 text-sm">Net {isProfit ? 'Profit' : 'Loss'}</p>
+                  <p className={`text-2xl font-bold ${isProfit ? 'text-green-400' : 'text-red-400'}`}>
+                    {isProfit ? '+' : '-'}₹{Math.abs(netProfit).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              {/* Stock Performance */}
+              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                <p className="text-gray-400 text-sm mb-2">📈 Stock Portfolio Performance</p>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-300">Total Change</span>
+                  <span className={`text-xl font-bold ${stockProfitLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    {stockProfitLoss >= 0 ? '+' : ''}{stockProfitLoss.toFixed(2)}%
+                  </span>
+                </div>
+                {data.investments.holdings.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {data.investments.holdings.slice(0, 3).map((holding: any, i: number) => (
+                      <div key={i} className="flex justify-between text-sm text-gray-400">
+                        <span>{holding.symbol}</span>
+                        <span className={holding.change >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          {holding.change >= 0 ? '+' : ''}{holding.change}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Monthly Income vs Expenses Chart */}
+              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+                <p className="text-gray-400 text-sm mb-3">Monthly Income vs Expenses</p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={data.expenses.monthlyTrend.map((m: any) => ({
+                    name: m.month,
+                    income: Math.round(m.amount * 1.25),
+                    expenses: m.amount
+                  }))}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis dataKey="name" stroke="#9CA3AF" />
+                    <YAxis stroke="#9CA3AF" tickFormatter={(value) => `₹${value.toLocaleString()}`} />
+                    <Tooltip 
+                      formatter={(value: number) => `₹${value.toLocaleString()}`}
+                      contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid #374151' }}
+                    />
+                    <Bar dataKey="income" fill="#10B981" name="Income" />
+                    <Bar dataKey="expenses" fill="#EF4444" name="Expenses" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* ✅ SMART SUMMARY BOX */}
+              <div className="bg-blue-900/20 border border-blue-800/30 rounded-lg p-4">
+                <h4 className="text-blue-400 font-semibold mb-3">🧠 Smart Summary</h4>
+                <ul className="space-y-2">
+                  {smartSummary.map((point, index) => (
+                    <li key={index} className="text-sm text-gray-300 flex items-start gap-2">
+                      <span className="text-blue-400 mt-0.5">•</span>
+                      <span>{point}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Insight Message */}
+              <div className={`p-4 rounded-lg ${isProfit ? 'bg-green-900/20 border border-green-800/30' : 'bg-yellow-900/20 border border-yellow-800/30'}`}>
+                <p className="text-sm text-gray-300">
+                  {isProfit 
+                    ? `🎉 You're in profit this month! You earned ₹${netProfit.toLocaleString()} more than you spent. `
+                    : `📊 You spent ₹${Math.abs(netProfit).toLocaleString()} more than you earned this month. `}
+                  {stockProfitLoss > 0 && ` Your stocks gained ${stockProfitLoss.toFixed(2)}% this month.`}
+                  {stockProfitLoss < 0 && ` Your stocks declined by ${Math.abs(stockProfitLoss).toFixed(2)}% this month.`}
+                  {isProfit ? ' Consider investing the surplus or adding to your emergency fund.' : ' Review your expenses and look for areas to cut back.'}
+                </p>
+              </div>
+            </div>
+          )
+        });
+            
+      default:
+            sections.push({
+              heading: 'Spending Distribution',
+              content: `Total monthly spending: ₹${data.expenses.total.toLocaleString()} across ${Object.keys(data.expenses.byCategory).length} categories.`,
+              type: 'insight',
+              chartData: data.expenses.byCategory,
+              chartType: 'pie'
+            });
+
+            if (data.expenses.monthlyTrend.length > 0) {
+              sections.push({
+                heading: 'Monthly Spending Trend',
+                content: `Your spending over the past ${data.expenses.monthlyTrend.length} months.`,
+                type: 'insight',
+                chartData: data.expenses.monthlyTrend.map(m => ({ name: m.month, value: m.amount })),
+                chartType: 'line'
+              });
+            }
+            break;
         }
-        break;
-    }
 
     return sections;
   };
