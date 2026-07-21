@@ -11,7 +11,7 @@ import { addTransaction } from "../lib/transactions";
 // same category options your autoCategorize produces, so things stay consistent
 const CATEGORIES = [
   "Technology", "Groceries", "Entertainment", "Transportation",
-  "Dining", "Income", "Other",
+  "Dining", "Income","Health", "Other",
 ];
 
 function AddExpenseModal({ isOpen, onClose, onSaved }) {
