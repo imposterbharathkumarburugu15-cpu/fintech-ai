@@ -5,7 +5,7 @@ import { TopNav } from "./components/TopNav";
 import { NexusChat } from "./components/NexusAI";
 import { AddTransactionModal } from "./components/AddTransactionModal";
 import { Dashboard } from "./components/Dashboard";
-import { ExpenseIntelligence } from "./components/ExpenseIntelligence";
+import { ExpenseIntelligence  } from "./components/ExpenseIntelligence";
 import { StockResearch } from "./components/StockResearch";
 import { PortfolioIntelligence } from "./components/PortfolioIntelligence";
 import { GoalPlanner } from "./components/GoalPlanner";
