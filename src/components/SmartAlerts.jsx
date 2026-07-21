@@ -134,7 +134,7 @@ export function SmartAlerts() {
                   <span className="px-3 py-1 bg-blue-500 text-white text-[10px] font-black rounded-full uppercase tracking-widest">AI Status: Active Monitoring</span>
                   <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Confidence: 98%</span>
                 </div>
-                <h2 className="text-3xl font-bold text-white leading-tight">Good Afternoon Bharath. <br />Your alert level is <span className="text-amber-500 underline underline-offset-8">Medium</span>.</h2>
+                <h2 className="text-3xl font-bold text-white leading-tight">Welcome Back! <br />Your alert level is <span className="text-amber-500 underline underline-offset-8">Medium</span>.</h2>
                 <div className="space-y-3">
                   {["Portfolio concentration increased in Tech.", "Entertainment spending is above budget.", "Two subscriptions flagged for review."].map((s, i) => (
                     <div key={i} className="flex gap-3 text-sm text-slate-400">
