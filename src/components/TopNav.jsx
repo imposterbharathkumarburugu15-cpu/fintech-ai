@@ -29,9 +29,10 @@ export function TopNav({ activeView, onViewChange, onToggleChat, user }) {
   }
 
   return (
-    <nav className="w-full h-[72px] bg-[#09090b] border-b border-[#27272a] flex items-center justify-between px-6 shrink-0 z-20">
+    <nav className="w-full bg-[#09090b] border-b border-[#27272a] shrink-0 z-20">
+      <div className="h-[64px] xl:h-[72px] flex items-center justify-between gap-3 px-3 sm:px-5 xl:px-6">
       {/* Left: Logo */}
-      <div className="flex items-center gap-3 w-[240px]">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0 xl:w-[220px]">
         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg">F</div>
         <div className="flex flex-col">
           <span className="text-white font-bold text-[16px] leading-tight tracking-tight">FinPilot AI</span>
@@ -40,7 +41,7 @@ export function TopNav({ activeView, onViewChange, onToggleChat, user }) {
       </div>
 
       {/* Center: Nav */}
-      <div className="flex items-center gap-1 hidden md:flex">
+      <div className="flex flex-1 justify-center items-center gap-1 hidden xl:flex">
         {navItems.map((item) => {
           const isActive = activeView === item.id;
           return (
@@ -53,13 +54,14 @@ export function TopNav({ activeView, onViewChange, onToggleChat, user }) {
       </div>
 
       {/* Right */}
-      <div className="flex items-center gap-4 w-[500px] justify-end">
+      <div className="flex items-center gap-1.5 sm:gap-3 xl:w-[500px] justify-end">
         <button onClick={onToggleChat}
-          className="flex items-center gap-2 bg-gradient-to-r from-[#6366f1] to-[#a855f7] hover:from-[#4f46e5] hover:to-[#9333ea] text-white text-[13px] font-bold px-4 py-2 rounded-lg transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)] active:scale-95 border border-white/10">
-          <Sparkles className="w-4 h-4" /> Ask Nexus AI
+          aria-label="Ask Nexus AI"
+          className="flex items-center gap-2 bg-gradient-to-r from-[#6366f1] to-[#a855f7] hover:from-[#4f46e5] hover:to-[#9333ea] text-white text-[13px] font-bold px-2.5 sm:px-4 py-2 rounded-lg transition-all shadow-[0_0_15px_rgba(168,85,247,0.3)] active:scale-95 border border-white/10">
+          <Sparkles className="w-4 h-4" /> <span className="hidden sm:inline">Ask Nexus AI</span>
         </button>
 
-        <div className="relative hidden lg:block w-[280px]">
+        <div className="relative hidden 2xl:block w-[280px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71717a]" />
           <input type="text" placeholder="Search expenses, stocks, reports..."
             className="w-full bg-[#121214] border border-[#27272a] rounded-lg pl-9 pr-10 py-2 text-[13px] text-white placeholder:text-[#52525b] focus:outline-none focus:border-[#52525b] transition-all" />
@@ -72,7 +74,7 @@ export function TopNav({ activeView, onViewChange, onToggleChat, user }) {
             <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-[#09090b] rounded-full" />
           </button>
 
-          <div className="h-5 w-px bg-[#27272a]"></div>
+          <div className="hidden sm:block h-5 w-px bg-[#27272a]"></div>
 
           {/* Profile — real user, with logout dropdown */}
           <div className="relative">
@@ -102,6 +104,19 @@ export function TopNav({ activeView, onViewChange, onToggleChat, user }) {
             )}
           </div>
         </div>
+      </div>
+      </div>
+
+      <div className="xl:hidden flex gap-1 overflow-x-auto scrollbar-hide px-3 sm:px-5 pb-2" aria-label="Main navigation">
+        {navItems.map((item) => {
+          const isActive = activeView === item.id;
+          return (
+            <button key={item.id} onClick={() => onViewChange?.(item.id)}
+              className={`shrink-0 px-3 py-2 text-[12px] font-medium rounded-lg transition-colors ${isActive ? "bg-[#27272a] text-white" : "text-[#a1a1aa] hover:text-[#e4e4e7]"}`}>
+              {item.label}
+            </button>
+          );
+        })}
       </div>
     </nav>
   );

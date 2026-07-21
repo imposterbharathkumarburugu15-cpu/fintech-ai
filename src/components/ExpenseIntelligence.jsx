@@ -136,12 +136,12 @@ function ExpenseIntelligence() {
   const money = (n) => `₹${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
 
   return (
-    <div className="max-w-[1080px] mx-auto flex flex-col h-full">
+    <div className="max-w-[1080px] mx-auto flex flex-col h-full page-shell">
       {/* Header */}
-      <div className="flex justify-between items-end mb-8 animate-fade-in-up">
+      <div className="page-header flex justify-between items-end mb-8 animate-fade-in-up">
         <div>
           <p className="text-[#3b82f6] text-[11px] font-bold tracking-[0.12em] mb-2 uppercase">Analysis</p>
-          <h1 className="text-[38px] font-semibold text-white tracking-[-0.025em] mb-2 leading-none">Expense Intelligence</h1>
+          <h1 className="page-title text-[38px] font-semibold text-white tracking-[-0.025em] mb-2 leading-none">Expense Intelligence</h1>
           <p className="text-[#71717a] text-[15px]">AI-powered transaction categorization and spending trends.</p>
         </div>
         <button onClick={() => setIsAddOpen(true)}

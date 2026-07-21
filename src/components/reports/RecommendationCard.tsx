@@ -25,7 +25,7 @@ const RecommendationCard: React.FC<RecommendationCardProps> = ({ recommendation,
           <h4 className="font-semibold text-gray-200 mb-1">{recommendation.action}</h4>
           <p className="text-sm text-gray-400 mb-2">{recommendation.why}</p>
           <div className="flex items-center gap-1 text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded-full inline-block">
-            💪 {recommendation.impact}
+            {recommendation.impact}
           </div>
         </div>
       </div>

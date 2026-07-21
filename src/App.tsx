@@ -1,8 +1,8 @@
 // src/App.tsx
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { TopNav } from "./components/TopNav";
-import { CopilotChat } from "./components/NexusAI";
+import { NexusChat } from "./components/NexusAI";
 import { AddTransactionModal } from "./components/AddTransactionModal";
 import { Dashboard } from "./components/Dashboard";
 import { ExpenseIntelligence } from "./components/ExpenseIntelligence";
@@ -12,46 +12,60 @@ import { GoalPlanner } from "./components/GoalPlanner";
 import { ReportCenter } from "./components/ReportCenter";
 import { MarketIntelligence } from "./components/MarketIntelligence";
 import { SmartAlerts } from "./components/SmartAlerts";
-import ReportViewer from './components/reports/ReportViewer';
+import { Login } from "./components/Login";
 import { supabase } from "./supabaseClient";
-import { User } from "@supabase/supabase-js";
+import ReportViewer from './components/reports/ReportViewer';
 
 type ViewType = "dashboard" | "expenses" | "stocks" | "portfolio" | "goals" | "reports" | "markets" | "alerts";
 
 function App() {
-  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
-  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState<boolean>(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [activeView, setActiveView] = useState<ViewType>("dashboard");
   const [selectedReportType, setSelectedReportType] = useState<string>("monthly");
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Get user from Supabase
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
+    // Check if supabase is available
+    if (!supabase) {
+      console.error('❌ Supabase client not initialized');
       setLoading(false);
-    });
+      return;
+    }
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Get initial session
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setUser(session?.user || null);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('❌ Error getting session:', err);
+        setLoading(false);
+      });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
       setLoading(false);
     });
 
-    return () => listener?.subscription.unsubscribe();
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
+
+  const handleViewChange = (view: string) => {
+    setActiveView(view as ViewType);
+  };
 
   const handleExport = (format: 'pdf' | 'excel'): void => {
     console.log(`Exporting report as ${format}`);
     alert(`${format.toUpperCase()} export coming soon!`);
   };
 
-  // Wrapper function to handle view changes with proper typing
-  const handleViewChange = (view: string) => {
-    setActiveView(view as ViewType);
-  };
-
-  const renderView = (): React.ReactNode => {
+  const renderView = () => {
     switch (activeView) {
       case "dashboard":
         return <Dashboard onViewChange={setActiveView} onToggleChat={() => setIsChatOpen(true)} />;
@@ -109,7 +123,6 @@ function App() {
               </button>
             </div>     
             
-            {/* ✅ FIXED: Use user state instead of session */}
             {user?.id ? (
               <ReportViewer 
                 userId={user.id}
@@ -125,9 +138,15 @@ function App() {
           </div>
         );
       case "markets":
-        return <MarketIntelligence />;
+        return <MarketIntelligence onOpenStock={(symbol: string) => {
+          window.sessionStorage.setItem("finpilot-selected-stock", symbol);
+          setActiveView("stocks");
+        }} />;
       case "alerts":
-        return <SmartAlerts />;
+        return <SmartAlerts onViewChange={handleViewChange} onOpenStock={(symbol: string) => {
+          window.sessionStorage.setItem("finpilot-selected-stock", symbol);
+          setActiveView("stocks");
+        }} />;
       default:
         return <Dashboard onViewChange={setActiveView} onToggleChat={() => setIsChatOpen(true)} />;
     }
@@ -145,22 +164,25 @@ function App() {
     );
   }
 
+  // If no user, show login
+  if (!user) {
+    return <Login />;
+  }
+
+  // Logged in - Main App
   return (
     <div className="flex flex-col h-screen w-full bg-[#040405] overflow-hidden text-[#fafafa] font-sans">
-      <TopNav 
+      <TopNav
         activeView={activeView}
         onViewChange={handleViewChange}
         onToggleChat={() => setIsChatOpen(true)}
         user={user}
       />
-
       <main className="flex-1 overflow-hidden relative">
         <div className="h-full overflow-y-auto scrollbar-hide relative bg-[#040405]">
           {renderView()}
         </div>
-
-        <CopilotChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-
+        <NexusChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
         <AddTransactionModal
           isOpen={isAddTransactionOpen}
           onClose={() => setIsAddTransactionOpen(false)}

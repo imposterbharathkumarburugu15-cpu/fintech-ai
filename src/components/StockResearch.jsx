@@ -141,8 +141,25 @@ function MetricRow({ label, value, last = false }) {
   );
 }
 
+function NseStat({ label, value, color }) {
+  return <div className="border-r border-[#e4e6eb] px-3 last:border-0"><p className="flex items-center gap-2 text-[11px] text-[#737887]"><span className="h-2.5 w-2.5 rounded-full" style={{ background: color }}/>{label}</p><p className="mt-1 font-semibold" style={{ color: label === "Change" ? color : "#1f2430" }}>{value}</p></div>;
+}
+
+function NseLikeChart({ positive }) {
+  const green = "#0c8a24";
+  const red = "#c93b43";
+  const color = positive ? green : red;
+  const line = positive
+    ? "M15 190 L32 188 L43 148 L58 137 L72 121 L86 131 L104 106 L122 115 L140 95 L157 112 L174 90 L190 100 L208 78 L227 102 L244 92 L264 73 L281 86 L298 70 L317 92 L336 74 L354 84 L373 61 L391 78 L410 56 L428 75 L445 43 L463 62 L480 41 L499 56 L516 29 L535 48 L552 35 L570 50 L589 25 L607 42 L625 20"
+    : "M15 57 L32 61 L43 83 L58 72 L72 102 L86 91 L104 120 L122 110 L140 135 L157 119 L174 148 L190 132 L208 158 L227 147 L244 174 L264 154 L281 181 L298 166 L317 191 L336 175 L354 197 L373 183 L391 205 L410 191 L428 211 L445 198 L463 219 L480 205 L499 228 L516 213 L535 233 L552 220 L570 239 L589 226 L607 245 L625 230";
+  return <div className="mt-4 h-60 w-full"><svg className="h-full w-full" viewBox="0 0 640 250" preserveAspectRatio="none"><defs><linearGradient id="nseStockFill" x1="0" x2="0" y1="0" y2="1"><stop stopColor={positive ? "#61c6e7" : "#ed8c93"} stopOpacity=".78"/><stop offset="1" stopColor={positive ? "#dff7fc" : "#ffe4e6"} stopOpacity=".4"/></linearGradient></defs>{[35,75,115,155,195,235].map(y => <path key={y} d={`M15 ${y} H625`} stroke="#e6e9ee"/>)}<path d={`${line} L625 235 L15 235 Z`} fill="url(#nseStockFill)"/><path d={line} fill="none" stroke={color} strokeWidth="3" vectorEffect="non-scaling-stroke"/><path d="M15 235 H625" stroke="#252a33" strokeWidth="1.3"/></svg><div className="mt-1 flex justify-between text-[10px] text-[#737887]"><span>09:15</span><span>10:30</span><span>12:00</span><span>13:30</span><span>15:30</span></div></div>;
+}
+
 function StockResearch() {
-  const [query, setQuery] = useState("AAPL");
+  const [query, setQuery] = useState(() => {
+    const selectedFromMarket = window.sessionStorage.getItem("finpilot-selected-stock");
+    return STOCKS[selectedFromMarket] ? selectedFromMarket : "RELIANCE";
+  });
   const [inputVal, setInputVal] = useState("");
 
   const stock = STOCKS[query.toUpperCase()] || STOCKS["AAPL"];
@@ -207,6 +224,16 @@ function StockResearch() {
 
         {/* Main Panel */}
         <div className="lg:col-span-2 space-y-4">
+
+          {/* NSE-style live market chart — opened when a Market Intelligence stock is selected */}
+          <div className="rounded-2xl border border-[#dadde5] bg-[#fbfcfe] p-5 text-[#161827] shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#e7e9ef] pb-4">
+              <div><div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-[#138b32]"/><b className="text-base">{stock.ticker} • NSE market view</b><span className="rounded bg-[#eaf8ee] px-2 py-0.5 text-[9px] font-bold text-[#168542]">LIVE</span></div><p className="mt-1 text-xs text-[#707585]">Open, high, low and intraday price action</p></div>
+              <div className="flex rounded-lg bg-[#eeecf8] p-1">{["1D", "1M", "3M", "6M", "1Y"].map((range, index) => <button key={range} className={`rounded-md px-3 py-1.5 text-xs font-semibold ${index === 0 ? "bg-[#49368c] text-white" : "text-[#5e5970]"}`}>{range}</button>)}</div>
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-y-3 text-sm sm:grid-cols-4"><NseStat label="Open" value={stock.price} color="#49368c"/><NseStat label="High" value={stock.price} color="#138b32"/><NseStat label="Low" value={stock.price} color="#ca3b43"/><NseStat label="Change" value={stock.change} color={stock.positive ? "#098a28" : "#c73737"}/></div>
+            <NseLikeChart positive={stock.positive}/>
+          </div>
 
           {/* Company Header */}
           <div className="bg-[#18181b] border border-[#27272a] rounded-2xl p-6">

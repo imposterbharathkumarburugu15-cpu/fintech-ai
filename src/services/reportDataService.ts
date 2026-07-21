@@ -1,11 +1,16 @@
 // src/services/reportDataService.ts
 
-import { supabase } from "../supabaseClient";
+import { supabase, isSupabaseConfigured } from "../supabaseClient";
 import { ReportData } from "../types/report.types";
-
 
 export async function fetchReportData(userId?: string): Promise<ReportData> {
   try {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured || !supabase) {
+      console.log('⚠️ Supabase not configured - using mock data');
+      return getMockReportData();
+    }
+
     // Get current user
     let user = null;
     let userIdToUse = userId;
@@ -34,9 +39,11 @@ export async function fetchReportData(userId?: string): Promise<ReportData> {
 
     if (txError) {
       console.error('Error fetching transactions:', txError);
-      // If we have no transactions, return mock data
       return getMockReportData();
     }
+
+    console.log(`📊 Found ${transactions?.length || 0} transactions`);
+
     // ===== FETCH GOALS =====
     let goals: any[] = [];
     try {
@@ -93,8 +100,6 @@ function processTransactionsToReport(
   const credits = transactions.filter((t: any) => t.type === 'credit');
 
   // ===== 1. EXPENSE ANALYSIS =====
-  
-  // Total spending
   const totalSpent = debits.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
   // Spending by category
@@ -106,7 +111,6 @@ function processTransactionsToReport(
   });
 
   // ===== 2. MONTHLY TREND =====
-  
   const monthlyTrend: { month: string; amount: number }[] = [];
   const monthMap: Record<string, number> = {};
   
@@ -122,7 +126,6 @@ function processTransactionsToReport(
     monthMap[monthKey] += Number(t.amount);
   });
 
-  // Update monthly trend with amounts
   const monthKeys = Object.keys(monthMap);
   monthKeys.forEach((key, index) => {
     if (monthlyTrend[index]) {
@@ -134,7 +137,6 @@ function processTransactionsToReport(
   monthlyTrend.sort((a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month));
 
   // ===== 3. RECURRING PAYMENTS =====
-  
   const recurringPayments: { name: string; amount: number; frequency: string }[] = [];
   const merchantFrequency: Record<string, { count: number; total: number; lastDate: Date }> = {};
   
@@ -164,7 +166,6 @@ function processTransactionsToReport(
   });
 
   // ===== 4. UNUSUAL SPENDING =====
-  
   const avgAmount = debits.length > 0 ? totalSpent / debits.length : 0;
   const threshold = Math.max(avgAmount * 2, 5000);
   
@@ -179,18 +180,15 @@ function processTransactionsToReport(
     .slice(0, 5);
 
   // ===== 5. INCOME ANALYSIS =====
-  
   const totalIncome = credits.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
   const monthlyIncome = totalIncome > 0 ? Math.round(totalIncome / Math.max(credits.length, 1)) : 0;
 
   // ===== 6. SAVINGS RATE =====
-  
   const savingsRate = monthlyIncome > 0 
     ? Math.round(((monthlyIncome - totalSpent) / monthlyIncome) * 100) 
     : 0;
 
   // ===== 7. HEALTH SCORE =====
-  
   const totalPortfolioValue = investments.reduce((sum: number, inv: any) => sum + Number(inv.value || 0), 0);
   
   const healthScore = calculateHealthScore(
@@ -202,14 +200,12 @@ function processTransactionsToReport(
   );
 
   // ===== 8. GOALS =====
-  
   const formattedGoals = goals.map((g: any) => ({
     name: g.name || 'Untitled Goal',
     target: Number(g.target_amount || g.target || 0),
     progress: Number(g.progress || 0)
   }));
 
-  // If no goals, create default based on data
   if (formattedGoals.length === 0) {
     const monthlySavings = Math.max(0, monthlyIncome - totalSpent);
     formattedGoals.push({
@@ -225,7 +221,6 @@ function processTransactionsToReport(
   }
 
   // ===== 9. ALERTS =====
-  
   const alerts: any[] = [];
 
   if (savingsRate < 10) {
@@ -257,7 +252,6 @@ function processTransactionsToReport(
   }
 
   // ===== 10. INVESTMENTS =====
-  
   const sectorAllocation: Record<string, number> = {};
   investments.forEach((inv: any) => {
     const sector = inv.sector || 'Other';
