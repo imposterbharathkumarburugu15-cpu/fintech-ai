@@ -892,6 +892,41 @@ const ReportViewer: React.FC<ReportViewerProps> = ({
     return sections;
   };
 
+// Load report when userId or reportType changes
+useEffect(() => {
+  loadReport();
+}, [userId, reportType]);
+
+// Render charts when report loads
+useEffect(() => {
+  if (!report) return;
+  
+  const timeout = setTimeout(() => {
+    document.querySelectorAll('.recharts-wrapper').forEach((el: any) => {
+      el.style.width = '100%';
+      el.style.height = '300px';
+      el.style.display = 'block';
+      el.style.visibility = 'visible';
+    });
+  }, 500);
+  
+  return () => clearTimeout(timeout);
+}, [report]);
+
+// Handle window resize
+useEffect(() => {
+  const handleResize = () => {
+    document.querySelectorAll('.recharts-wrapper').forEach((el: any) => {
+      el.style.width = '100%';
+      el.style.height = '300px';
+      el.style.display = 'block';
+    });
+  };
+  
+  window.addEventListener('resize', handleResize);
+  return () => window.removeEventListener('resize', handleResize);
+}, []);
+
   // ===== EXPORT HANDLER =====
   const handleExport = async (format: 'pdf' | 'excel') => {
     if (format === 'pdf') {
