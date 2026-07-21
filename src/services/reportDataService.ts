@@ -11,18 +11,13 @@ export async function fetchReportData(userId?: string): Promise<ReportData> {
       return getMockReportData();
     }
 
-    // Get current user
-    let user = null;
     let userIdToUse = userId;
 
-    // If no userId provided, try to get from Supabase
     if (!userIdToUse) {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
-      user = currentUser;
       userIdToUse = currentUser?.id;
     }
 
-    // If we still don't have a valid user ID, use mock data
     if (!userIdToUse) {
       console.log('❌ No user logged in - using mock data');
       return getMockReportData();
@@ -95,11 +90,9 @@ function processTransactionsToReport(
   investments: any[]
 ): ReportData {
   
-  // Separate debit and credit
   const debits = transactions.filter((t: any) => t.type === 'debit');
   const credits = transactions.filter((t: any) => t.type === 'credit');
 
-  // ===== 1. EXPENSE ANALYSIS =====
   const totalSpent = debits.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
 
   // Spending by category
@@ -110,7 +103,7 @@ function processTransactionsToReport(
     byCategory[category] = (byCategory[category] || 0) + amount;
   });
 
-  // ===== 2. MONTHLY TREND =====
+  // Monthly trend
   const monthlyTrend: { month: string; amount: number }[] = [];
   const monthMap: Record<string, number> = {};
   
@@ -136,7 +129,7 @@ function processTransactionsToReport(
   const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   monthlyTrend.sort((a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month));
 
-  // ===== 3. RECURRING PAYMENTS =====
+  // Recurring payments
   const recurringPayments: { name: string; amount: number; frequency: string }[] = [];
   const merchantFrequency: Record<string, { count: number; total: number; lastDate: Date }> = {};
   
@@ -156,7 +149,7 @@ function processTransactionsToReport(
   threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
   Object.entries(merchantFrequency).forEach(([merchant, data]) => {
-    if (data.count >= 3 && data.lastDate > threeMonthsAgo) {
+    if (data.count >= 2 && data.lastDate > threeMonthsAgo) {
       recurringPayments.push({
         name: merchant,
         amount: Math.round(data.total / data.count),
@@ -165,9 +158,9 @@ function processTransactionsToReport(
     }
   });
 
-  // ===== 4. UNUSUAL SPENDING =====
+  // Unusual spending
   const avgAmount = debits.length > 0 ? totalSpent / debits.length : 0;
-  const threshold = Math.max(avgAmount * 2, 5000);
+  const threshold = Math.max(avgAmount * 2, 3000);
   
   const unusualSpending = debits
     .filter((t: any) => Number(t.amount) > threshold)
@@ -179,16 +172,16 @@ function processTransactionsToReport(
     .sort((a: any, b: any) => b.amount - a.amount)
     .slice(0, 5);
 
-  // ===== 5. INCOME ANALYSIS =====
+  // Income
   const totalIncome = credits.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
-  const monthlyIncome = totalIncome > 0 ? Math.round(totalIncome / Math.max(credits.length, 1)) : 0;
+  const monthlyIncome = totalIncome > 0 ? Math.round(totalIncome) : 50000;
 
-  // ===== 6. SAVINGS RATE =====
+  // Savings rate
   const savingsRate = monthlyIncome > 0 
     ? Math.round(((monthlyIncome - totalSpent) / monthlyIncome) * 100) 
     : 0;
 
-  // ===== 7. HEALTH SCORE =====
+  // Health score
   const totalPortfolioValue = investments.reduce((sum: number, inv: any) => sum + Number(inv.value || 0), 0);
   
   const healthScore = calculateHealthScore(
@@ -199,7 +192,7 @@ function processTransactionsToReport(
     goals
   );
 
-  // ===== 8. GOALS =====
+  // Goals
   const formattedGoals = goals.map((g: any) => ({
     name: g.name || 'Untitled Goal',
     target: Number(g.target_amount || g.target || 0),
@@ -220,7 +213,7 @@ function processTransactionsToReport(
     });
   }
 
-  // ===== 9. ALERTS =====
+  // Alerts
   const alerts: any[] = [];
 
   if (savingsRate < 10) {
@@ -241,17 +234,7 @@ function processTransactionsToReport(
     });
   });
 
-  if (recurringPayments.length > 3) {
-    const totalRecurring = recurringPayments.reduce((sum, r) => sum + r.amount, 0);
-    alerts.push({
-      type: 'budget',
-      message: `You have ${recurringPayments.length} recurring payments totaling ₹${totalRecurring.toLocaleString()}/month`,
-      severity: 'info',
-      date: new Date().toLocaleDateString()
-    });
-  }
-
-  // ===== 10. INVESTMENTS =====
+  // Investments
   const sectorAllocation: Record<string, number> = {};
   investments.forEach((inv: any) => {
     const sector = inv.sector || 'Other';
@@ -271,7 +254,6 @@ function processTransactionsToReport(
     change: Number(inv.change || 0)
   }));
 
-  // ===== BUILD REPORT =====
   return {
     expenses: {
       total: totalSpent,
@@ -324,7 +306,6 @@ function calculateHealthScore(
 ): number {
   let score = 0;
 
-  // Savings rate (max 35)
   if (savingsRate >= 30) score += 35;
   else if (savingsRate >= 25) score += 30;
   else if (savingsRate >= 20) score += 25;
@@ -333,7 +314,6 @@ function calculateHealthScore(
   else if (savingsRate >= 5) score += 10;
   else score += 5;
 
-  // Expense management (max 25)
   const expenseRatio = monthlyIncome > 0 ? monthlyExpenses / monthlyIncome : 1;
   if (expenseRatio < 0.3) score += 25;
   else if (expenseRatio < 0.5) score += 20;
@@ -341,7 +321,6 @@ function calculateHealthScore(
   else if (expenseRatio < 0.85) score += 10;
   else score += 5;
 
-  // Portfolio (max 25)
   if (portfolioValue > 500000) score += 25;
   else if (portfolioValue > 250000) score += 20;
   else if (portfolioValue > 100000) score += 15;
@@ -349,7 +328,6 @@ function calculateHealthScore(
   else if (portfolioValue > 25000) score += 5;
   else score += 2;
 
-  // Goals (max 15)
   const goalsOnTrack = goals.filter((g: any) => (g.progress || 0) > 50).length;
   const totalGoals = goals.length || 1;
   const goalRatio = goalsOnTrack / totalGoals;
@@ -361,7 +339,7 @@ function calculateHealthScore(
   return Math.min(Math.max(score, 0), 100);
 }
 
-// ===== MOCK DATA (FALLBACK) =====
+// ===== MOCK DATA =====
 
 function getMockReportData(): ReportData {
   return {
